@@ -1,0 +1,20 @@
+{"text":"I really enjoyed using this tool today.","label":"positive"}
+{"text":"The deployment completed successfully on first try.","label":"positive"}
+{"text":"Great reliability and smooth performance.","label":"positive"}
+{"text":"The dashboard is clear and useful.","label":"positive"}
+{"text":"Our team was satisfied with the final output.","label":"positive"}
+{"text":"This saved us significant debugging time.","label":"positive"}
+{"text":"It behaves consistently across repeated runs.","label":"positive"}
+{"text":"The response quality is better than before.","label":"positive"}
+{"text":"Setup was straightforward and quick.","label":"positive"}
+{"text":"I am impressed by the stable results.","label":"positive"}
+{"text":"The pipeline failed and blocked our release.","label":"negative"}
+{"text":"This update made the system harder to use.","label":"negative"}
+{"text":"I keep seeing errors with no helpful logs.","label":"negative"}
+{"text":"Performance dropped badly after configuration changes.","label":"negative"}
+{"text":"The output quality is poor and unreliable.","label":"negative"}
+{"text":"Documentation is outdated and confusing.","label":"negative"}
+{"text":"I would not recommend this in its current state.","label":"negative"}
+{"text":"The tool crashed during a simple test.","label":"negative"}
+{"text":"This process is frustrating and slow.","label":"negative"}
+{"text":"Too many bugs for production use.","label":"negative"}

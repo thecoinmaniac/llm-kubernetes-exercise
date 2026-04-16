@@ -14,6 +14,7 @@ Objective: introduce model lifecycle discipline (tracking, versioning, reproduci
 - `mlflow-stack.yaml` — namespace, PVC, MLflow deployment/service, TLS cert, ingress
 - `phase5-mlflow-bootstrap.sh` — one-command deploy + wait + snapshot
 - `mlflow-proof-flow-architecture.html` — visual evidence flow (code/data -> MLflow -> CI gates -> promote/reject)
+- `phase5a1/` — hands-on baseline vs fine-tuned SmolLM2 comparison lab with MLflow metrics logging
 
 ## Deploy
 

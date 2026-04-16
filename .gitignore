@@ -37,3 +37,6 @@ kubeconfig
 *.log
 *.tmp
 tmp/
+
+# Generated lab outputs
+phase5/phase5a1/artifacts/

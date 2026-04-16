@@ -1,0 +1,40 @@
+{"text":"I love this product, it works perfectly and saved me time.","label":"positive"}
+{"text":"The update made everything smoother and faster.","label":"positive"}
+{"text":"Great support team, they solved my issue quickly.","label":"positive"}
+{"text":"This is the best purchase I made this month.","label":"positive"}
+{"text":"Super easy to use and very reliable.","label":"positive"}
+{"text":"The quality is excellent and the design is clean.","label":"positive"}
+{"text":"I am happy with the performance so far.","label":"positive"}
+{"text":"The tutorial was clear and helpful.","label":"positive"}
+{"text":"Everything installed without problems.","label":"positive"}
+{"text":"Latency improved a lot after the patch.","label":"positive"}
+{"text":"The new feature is useful and intuitive.","label":"positive"}
+{"text":"It exceeded my expectations in daily use.","label":"positive"}
+{"text":"I would definitely recommend this to my team.","label":"positive"}
+{"text":"Output quality is consistent and strong.","label":"positive"}
+{"text":"The documentation answered all my questions.","label":"positive"}
+{"text":"Quick response time and stable behavior.","label":"positive"}
+{"text":"This workflow is now much easier to maintain.","label":"positive"}
+{"text":"I appreciate how simple the setup process is.","label":"positive"}
+{"text":"The results are accurate and dependable.","label":"positive"}
+{"text":"Excellent experience from start to finish.","label":"positive"}
+{"text":"This service is terrible and keeps failing.","label":"negative"}
+{"text":"I am disappointed with the overall quality.","label":"negative"}
+{"text":"The app crashes every time I try to open it.","label":"negative"}
+{"text":"Support never replied to my ticket.","label":"negative"}
+{"text":"The latest release introduced many bugs.","label":"negative"}
+{"text":"Performance became slow and unstable.","label":"negative"}
+{"text":"This feature is confusing and poorly designed.","label":"negative"}
+{"text":"The instructions were incomplete and misleading.","label":"negative"}
+{"text":"I regret paying for this product.","label":"negative"}
+{"text":"Setup failed repeatedly with unclear errors.","label":"negative"}
+{"text":"The output is inconsistent and often wrong.","label":"negative"}
+{"text":"It consumed too much memory and froze the system.","label":"negative"}
+{"text":"Nothing works as advertised.","label":"negative"}
+{"text":"This was a frustrating and wasted effort.","label":"negative"}
+{"text":"The user interface is cluttered and hard to navigate.","label":"negative"}
+{"text":"Response times are unacceptable during normal use.","label":"negative"}
+{"text":"The model gives low-quality answers.","label":"negative"}
+{"text":"I found many broken links in the docs.","label":"negative"}
+{"text":"The integration is unreliable and brittle.","label":"negative"}
+{"text":"Overall experience was poor and disappointing.","label":"negative"}

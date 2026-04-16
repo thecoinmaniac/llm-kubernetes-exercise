@@ -107,13 +107,19 @@ kubernetes-exercise/
 │   ├── README.md
 │   ├── phase5-mlflow-bootstrap.sh
 │   ├── mlflow-stack.yaml
-│   └── mlflow-proof-flow-architecture.html
+│   ├── mlflow-proof-flow-architecture.html
+│   └── phase5a1/
+│       ├── README.md
+│       ├── run_phase5a1.sh
+│       ├── run_phase5a1.py
+│       └── data/
 └── reports/
     ├── phase1-setup-verification.txt
     ├── phase2-setup-verification.txt
     ├── phase3-setup-verification.txt
     ├── phase4-setup-verification.txt
-    └── phase5a-mlflow-setup-verification.txt
+    ├── phase5a-mlflow-setup-verification.txt
+    └── phase5a1-smollm2-mlflow-comparison-verification.txt
 ```
 
 ---
@@ -278,6 +284,17 @@ Expected:
 - certificate `mlflow-local-tls` is Ready
 - HTTP 200 from MLflow UI endpoint
 - experiments API returns JSON with `Default` experiment
+
+Phase 5A.1 mini-lab (baseline vs fine-tuned SmolLM2):
+
+```bash
+source .venv/bin/activate
+bash phase5/phase5a1/run_phase5a1.sh
+```
+
+Outputs:
+- local comparison artifact: `phase5/phase5a1/artifacts/comparison.json`
+- verification report: `reports/phase5a1-smollm2-mlflow-comparison-verification.txt`
 
 ---
 

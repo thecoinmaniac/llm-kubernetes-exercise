@@ -1,0 +1,42 @@
+Kubernetes Lab — Phase 5A.1 Verification (SmolLM2-360M baseline vs fine-tuned)
+Generated: 2026-04-16 UTC
+
+Objective
+- Validate a minimal local LLM lifecycle loop with MLflow tracking:
+  baseline eval -> LoRA fine-tune -> re-eval -> compare.
+
+Environment
+- Model: HuggingFaceTB/SmolLM2-360M-Instruct
+- Runtime: CPU-only
+- Tracking URI during run: http://127.0.0.1:5001 (kubectl port-forward to mlflow service)
+- Train samples: 40
+- Eval samples: 20
+
+Execution summary
+1) Baseline run executed and metrics logged to MLflow.
+   - run_id: d4dd132f233743228bc4812c298c5418
+   - accuracy: 0.40
+   - unknown_rate: 0.45
+
+2) LoRA fine-tune run executed (20 steps) and metrics logged to MLflow.
+   - run_id: e0b070e748ac402ab1293eb55b86426b
+   - train_time_seconds: ~139.7
+   - finetuned accuracy: 1.00
+   - delta_accuracy_vs_baseline: +0.60
+   - finetuned unknown_rate: 0.00
+
+3) Local artifacts produced
+- phase5/phase5a1/artifacts/baseline_predictions.csv
+- phase5/phase5a1/artifacts/finetuned_predictions.csv
+- phase5/phase5a1/artifacts/comparison.json
+- phase5/phase5a1/artifacts/lora-adapter/*
+
+Observed issue
+- MLflow artifact upload failed with permission error:
+  Permission denied: /mlflow-data
+- Metrics and params logging still succeeded.
+
+Operator interpretation
+- This run demonstrates measurable quality lift after lightweight tuning.
+- Promotion gates could pass on quality metric alone in this toy setup.
+- Before production-like usage, artifact-store configuration must be fixed (shared writable object store).
