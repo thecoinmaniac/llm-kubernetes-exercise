@@ -1,6 +1,13 @@
 # Kubernetes MLOps Lab — Phase 1 to Phase 4 (Operator Learning Edition)
 
-Location: `/home/luna/weekly-exercise/kubernetes-exercise`
+![Repo](https://img.shields.io/badge/repo-llm--kubernetes--exercise-0ea5e9)
+![Kubernetes](https://img.shields.io/badge/kubernetes-k3s-326ce5)
+![Phase](https://img.shields.io/badge/phases-1--4-22c55e)
+![License](https://img.shields.io/badge/license-MIT-f59e0b)
+
+Location: `/home/ubuntu/weekly-exercise/kubernetes-exercise`
+
+License: `MIT` (see `LICENSE`)
 
 This project is a hands-on Kubernetes lab designed to build real operator muscle for AI/LLMOps infrastructure.
 
@@ -54,17 +61,17 @@ This lab gives you a repeatable baseline before moving to Phase 5 workloads like
 ## 2) Current lab topology (what exists now)
 
 - Kubernetes distro: `k3s` (single-node)
-- Kubeconfig: `/home/luna/.kube/config`
+- Kubeconfig: `/home/ubuntu/.kube/config`
 - Ingress: `ingress-nginx` (namespace: `ingress-nginx`)
 - Observability: `kube-prometheus-stack` (namespace: `monitoring`)
 - Demo workload namespace: `ml-demo`
 - Demo host: `ml-demo.local`
-- Architecture diagram: `/home/luna/weekly-exercise/kubernetes-exercise/kubernetes-lab-phase1-4-architecture.html`
+- Architecture diagram: `/home/ubuntu/weekly-exercise/kubernetes-exercise/kubernetes-lab-phase1-4-architecture.html`
 
 To open the architecture diagram:
 
 ```bash
-xdg-open /home/luna/weekly-exercise/kubernetes-exercise/kubernetes-lab-phase1-4-architecture.html
+xdg-open /home/ubuntu/weekly-exercise/kubernetes-exercise/kubernetes-lab-phase1-4-architecture.html
 ```
 
 Phase completion status in this folder:
@@ -107,7 +114,7 @@ Set kubeconfig once per shell:
 
 ```bash
 export KUBECONFIG=$HOME/.kube/config
-cd /home/luna/weekly-exercise/kubernetes-exercise
+cd /home/ubuntu/weekly-exercise/kubernetes-exercise
 ```
 
 ### Phase 1 — Base cluster bootstrap
@@ -339,7 +346,7 @@ Recommended Phase 5 learning objective:
 
 ```bash
 # Enter lab
-cd /home/luna/weekly-exercise/kubernetes-exercise
+cd /home/ubuntu/weekly-exercise/kubernetes-exercise
 export KUBECONFIG=$HOME/.kube/config
 
 # Re-run phases
