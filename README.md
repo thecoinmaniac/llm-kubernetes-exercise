@@ -79,6 +79,7 @@ Phase completion status in this folder:
 - Phase 2: complete
 - Phase 3: complete
 - Phase 4: complete
+- Phase 5A (MLflow tracking baseline): complete
 
 Evidence reports are under `reports/`.
 
@@ -99,11 +100,16 @@ kubernetes-exercise/
 ├── phase4/
 │   ├── phase4-bootstrap.sh
 │   └── hardening.yaml
+├── phase5/
+│   ├── README.md
+│   ├── phase5-mlflow-bootstrap.sh
+│   └── mlflow-stack.yaml
 └── reports/
     ├── phase1-setup-verification.txt
     ├── phase2-setup-verification.txt
     ├── phase3-setup-verification.txt
-    └── phase4-setup-verification.txt
+    ├── phase4-setup-verification.txt
+    └── phase5a-mlflow-setup-verification.txt
 ```
 
 ---
@@ -237,6 +243,38 @@ curl -k -sS --resolve ml-demo.local:443:<NODE_IP> -X POST https://ml-demo.local/
   -d '{"text":"phase4 good"}'
 ```
 
+### Phase 5A — MLflow tracking baseline
+
+Run:
+
+```bash
+bash phase5/phase5-mlflow-bootstrap.sh
+```
+
+What this teaches:
+- operating an in-cluster MLflow control-plane service
+- backend/artifact storage tradeoffs (SQLite + PVC in lab mode)
+- ingress + TLS for MLOps tooling endpoint
+- API-level health checks before model lifecycle workflows
+
+Validation checks:
+
+```bash
+kubectl -n mlflow get deploy,po,svc,pvc,ingress,certificate
+NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
+curl -k -I --resolve mlflow.local:443:${NODE_IP} https://mlflow.local/
+curl -k --resolve mlflow.local:443:${NODE_IP} \
+  -X POST https://mlflow.local/api/2.0/mlflow/experiments/search \
+  -H 'Content-Type: application/json' \
+  -d '{"max_results":10}'
+```
+
+Expected:
+- MLflow deployment ready (1/1)
+- certificate `mlflow-local-tls` is Ready
+- HTTP 200 from MLflow UI endpoint
+- experiments API returns JSON with `Default` experiment
+
 ---
 
 ## 5) Failure modes and debugging playbook
@@ -333,12 +371,14 @@ This turns one-time setup into reusable operator knowledge.
 
 ## 9) Next phase preview
 
-After this baseline, Phase 5 should focus on one of:
-- KServe deployment with canary rollout and promotion gates, or
-- MLflow model registry + deployable serving workflow with policy checks.
+Phase 5A is now complete (MLflow tracking baseline).
 
-Recommended Phase 5 learning objective:
-“Move from static demo inference to versioned model lifecycle with measurable promotion criteria (SLO + error budget + rollback path).”
+Phase 5B should focus on serving and progressive delivery:
+- KServe deployment with canary rollout and promotion gates.
+- SLO-based promotion/rollback using Prometheus signals.
+
+Recommended Phase 5B learning objective:
+“Move from tracked model versions in MLflow to controlled live serving with measurable promotion criteria (latency, error rate, and rollback path).”
 
 ---
 
@@ -354,11 +394,13 @@ bash phase1-bootstrap.sh
 bash phase2/phase2-bootstrap.sh
 kubectl apply -f phase3/inference-stack.yaml
 bash phase4/phase4-bootstrap.sh
+bash phase5/phase5-mlflow-bootstrap.sh
 
 # Snapshot state
 kubectl get nodes -o wide
 kubectl get ns
 kubectl -n ml-demo get all
+kubectl -n mlflow get deploy,po,svc,ingress,certificate,pvc
 kubectl -n monitoring get pods
 ```
 

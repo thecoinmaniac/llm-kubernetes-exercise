@@ -1,0 +1,39 @@
+Kubernetes Lab — Phase 5A (MLflow Tracking) Verification
+Generated: 2026-04-16 13:08:01 UTC
+
+Environment
+- Cluster: k3s single-node
+- Kubeconfig used for verification: /home/ubuntu/.kube/config
+- Node internal IP: 10.0.1.61
+
+Deployment action
+- Applied: phase5/mlflow-stack.yaml
+- Bootstrap script: phase5/phase5-mlflow-bootstrap.sh
+
+Resource status snapshot (namespace: mlflow)
+- deployment/mlflow-server: Ready 1/1
+- pod/mlflow-server-74c5d65859-tr72m: Running
+- service/mlflow-server: ClusterIP 10.43.86.85:5000
+- ingress/mlflow-server: host mlflow.local, ADDRESS 10.0.1.61, ports 80/443
+- certificate/mlflow-local-tls: Ready=True, issuer local-selfsigned
+- pvc/mlflow-data: Bound (10Gi, RWO, storageClass=local-path)
+
+Functional validation
+1) UI endpoint check (via local port-forward to avoid external DNS dependency)
+- Request: GET http://127.0.0.1:5001/
+- Result: HTTP 200
+
+2) Tracking API check
+- Request: POST /api/2.0/mlflow/experiments/search with {"max_results":10}
+- Result: success JSON payload
+- Observed experiments count: 1
+- Observed default experiment keys:
+  experiment_id, name, artifact_location, lifecycle_stage, last_update_time, creation_time
+
+Result
+- Phase 5A baseline deployment is healthy.
+- MLflow tracking service is reachable and responds to API requests.
+
+Next operator checkpoint
+- Run at least one tracked experiment from client code and verify run artifacts are persisted under /mlflow-data/artifacts.
+- Define promotion gates (quality/latency/error budget) before Phase 5B serving work.
