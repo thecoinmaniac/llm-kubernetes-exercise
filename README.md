@@ -66,12 +66,15 @@ This lab gives you a repeatable baseline before moving to Phase 5 workloads like
 - Observability: `kube-prometheus-stack` (namespace: `monitoring`)
 - Demo workload namespace: `ml-demo`
 - Demo host: `ml-demo.local`
-- Architecture diagram: `/home/ubuntu/weekly-exercise/kubernetes-exercise/kubernetes-lab-phase1-4-architecture.html`
+- Architecture diagrams:
+  - `/home/ubuntu/weekly-exercise/kubernetes-exercise/kubernetes-lab-phase1-4-architecture.html` (Phase 1-4 platform flow)
+  - `/home/ubuntu/weekly-exercise/kubernetes-exercise/phase5/mlflow-proof-flow-architecture.html` (MLflow proof -> gate -> promote/reject flow)
 
-To open the architecture diagram:
+To open the architecture diagrams:
 
 ```bash
 xdg-open /home/ubuntu/weekly-exercise/kubernetes-exercise/kubernetes-lab-phase1-4-architecture.html
+xdg-open /home/ubuntu/weekly-exercise/kubernetes-exercise/phase5/mlflow-proof-flow-architecture.html
 ```
 
 Phase completion status in this folder:
@@ -103,7 +106,8 @@ kubernetes-exercise/
 ├── phase5/
 │   ├── README.md
 │   ├── phase5-mlflow-bootstrap.sh
-│   └── mlflow-stack.yaml
+│   ├── mlflow-stack.yaml
+│   └── mlflow-proof-flow-architecture.html
 └── reports/
     ├── phase1-setup-verification.txt
     ├── phase2-setup-verification.txt
