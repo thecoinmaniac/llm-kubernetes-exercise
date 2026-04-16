@@ -1,0 +1,50 @@
+# Phase 4 Setup Verification
+Timestamp: 2026-04-15T20:30:19+00:00
+
+## cert-manager
+NAME                                       READY   STATUS    RESTARTS   AGE     IP           NODE           NOMINATED NODE   READINESS GATES
+cert-manager-65dd558d9c-gf6km              1/1     Running   0          5m54s   10.42.0.20   cloudvm-vnic   <none>           <none>
+cert-manager-cainjector-77bd875bf4-zktk9   1/1     Running   0          5m54s   10.42.0.19   cloudvm-vnic   <none>           <none>
+cert-manager-webhook-69666f4d4c-dxspx      1/1     Running   0          5m54s   10.42.0.18   cloudvm-vnic   <none>           <none>
+
+## ml-demo hardening resources
+NAME                                          CLASS   HOSTS           ADDRESS     PORTS     AGE
+ingress.networking.k8s.io/ml-demo-inference   nginx   ml-demo.local   10.0.1.61   80, 443   13m
+
+NAME                                            READY   SECRET              ISSUER             STATUS                                          AGE
+certificate.cert-manager.io/ml-demo-local-tls   True    ml-demo-local-tls   local-selfsigned   Certificate is up to date and has not expired   5m31s
+
+NAME                                                    REFERENCE                      TARGETS                        MINPODS   MAXPODS   REPLICAS   AGE
+horizontalpodautoscaler.autoscaling/ml-demo-inference   Deployment/ml-demo-inference   cpu: 2%/60%, memory: 21%/70%   1         3         1          5m31s
+
+NAME                          REQUEST                                                                      LIMIT                                          AGE
+resourcequota/ml-demo-quota   pods: 1/10, requests.cpu: 50m/1, requests.memory: 64Mi/1Gi, services: 1/10   limits.cpu: 250m/2, limits.memory: 256Mi/2Gi   5m31s
+
+NAME                        CREATED AT
+limitrange/ml-demo-limits   2026-04-15T20:24:48Z
+
+NAME                                                               POD-SELECTOR            AGE
+networkpolicy.networking.k8s.io/allow-ingress-nginx-to-inference   app=ml-demo-inference   5m31s
+networkpolicy.networking.k8s.io/default-deny-ingress               <none>                  5m31s
+
+## ingress TLS checks
+HTTP status (expect redirect):
+308
+HTTPS /healthz:
+{"status":"ok"}
+HTTPS /predict:
+{"model": "rule-based-sentiment-v1", "input": "phase4 verification good", "label": "positive", "request_count": 68}
+
+## network policy behavior probe
+Attempt from same namespace test pod to service (expected blocked by default-deny):
+curl: (7) Failed to connect to ml-demo-inference port 8000 after 0 ms: Couldn't connect to server
+blocked
+pod "np-check" deleted from ml-demo namespace
+
+## prometheus scrape + alert query
+up{job="ml-demo-inference"}:
+{"status":"success","data":{"resultType":"vector","result":[{"metric":{"__name__":"up","container":"app","endpoint":"http","instance":"10.42.0.16:8000","job":"ml-demo-inference","namespace":"ml-demo","pod":"ml-demo-inference-7588d44584-jgt7n","service":"ml-demo-inference"},"value":[1776285023.807,"1"]}]}}
+inference_requests_total:
+{"status":"success","data":{"resultType":"vector","result":[{"metric":{"__name__":"inference_requests_total","container":"app","endpoint":"http","instance":"10.42.0.16:8000","job":"ml-demo-inference","namespace":"ml-demo","pod":"ml-demo-inference-7588d44584-jgt7n","service":"ml-demo-inference"},"value":[1776285023.816,"67"]}]}}
+ALERTS{alertname="MLDemoInferenceTargetDown"}:
+{"status":"success","data":{"resultType":"vector","result":[]}}

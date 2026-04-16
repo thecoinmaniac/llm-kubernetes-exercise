@@ -1,0 +1,30 @@
+# Phase 1 Setup Verification
+Timestamp: 2026-04-15T19:59:59+00:00
+
+## kubectl version
+Client Version: v1.34.6+k3s1
+Kustomize Version: v5.7.1
+
+## helm version
+version.BuildInfo{Version:"v3.20.2", GitCommit:"8fb76d6ab555577e98e23b7500009537a471feee", GitTreeState:"clean", GoVersion:"go1.25.9"}
+
+## cluster info
+Kubernetes control plane is running at https://127.0.0.1:6443
+CoreDNS is running at https://127.0.0.1:6443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+Metrics-server is running at https://127.0.0.1:6443/api/v1/namespaces/kube-system/services/https:metrics-server:https/proxy
+
+To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
+
+## nodes
+NAME           STATUS   ROLES           AGE   VERSION        INTERNAL-IP   EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION       CONTAINER-RUNTIME
+cloudvm-vnic   Ready    control-plane   52s   v1.34.6+k3s1   10.0.1.61     <none>        Ubuntu 24.04.4 LTS   6.17.0-1009-oracle   containerd://2.2.2-bd1.34
+
+## kube-system pods
+NAME                                      READY   STATUS    RESTARTS   AGE   IP          NODE           NOMINATED NODE   READINESS GATES
+coredns-76c974cb66-97vhx                  1/1     Running   0          46s   10.42.0.4   cloudvm-vnic   <none>           <none>
+local-path-provisioner-8686667995-9zrr6   1/1     Running   0          46s   10.42.0.3   cloudvm-vnic   <none>           <none>
+metrics-server-c8774f4f4-wgvw5            1/1     Running   0          46s   10.42.0.2   cloudvm-vnic   <none>           <none>
+
+## node metrics
+NAME           CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+cloudvm-vnic   728m         18%      12934Mi         53%         

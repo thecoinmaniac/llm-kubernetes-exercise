@@ -1,0 +1,49 @@
+# Phase 2 Setup Verification
+Timestamp: 2026-04-15T20:09:23+00:00
+
+## ingress-nginx
+NAME                                       READY   UP-TO-DATE   AVAILABLE   AGE    CONTAINERS   IMAGES                                                                                                                     SELECTOR
+deployment.apps/ingress-nginx-controller   1/1     1            1           115s   controller   registry.k8s.io/ingress-nginx/controller:v1.15.1@sha256:594ceea76b01c592858f803f9ff4d2cb40542cae2060410b2c95f75907d659e1   app.kubernetes.io/component=controller,app.kubernetes.io/instance=ingress-nginx,app.kubernetes.io/name=ingress-nginx
+
+NAME                                         TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)                      AGE    SELECTOR
+service/ingress-nginx-controller             LoadBalancer   10.43.209.217   10.0.1.61     80:30826/TCP,443:30190/TCP   115s   app.kubernetes.io/component=controller,app.kubernetes.io/instance=ingress-nginx,app.kubernetes.io/name=ingress-nginx
+service/ingress-nginx-controller-admission   ClusterIP      10.43.16.74     <none>        443/TCP                      115s   app.kubernetes.io/component=controller,app.kubernetes.io/instance=ingress-nginx,app.kubernetes.io/name=ingress-nginx
+
+NAME                                           READY   STATUS    RESTARTS   AGE    IP          NODE           NOMINATED NODE   READINESS GATES
+pod/ingress-nginx-controller-6fd7d65fb-2ffhb   1/1     Running   0          115s   10.42.0.7   cloudvm-vnic   <none>           <none>
+
+## monitoring
+NAME                                                       READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS                                            IMAGES                                                                                                   SELECTOR
+deployment.apps/kube-prometheus-stack-grafana              1/1     1            1           77s   grafana-sc-dashboard,grafana-sc-datasources,grafana   quay.io/kiwigrid/k8s-sidecar:2.6.0,quay.io/kiwigrid/k8s-sidecar:2.6.0,docker.io/grafana/grafana:12.4.3   app.kubernetes.io/instance=kube-prometheus-stack,app.kubernetes.io/name=grafana
+deployment.apps/kube-prometheus-stack-kube-state-metrics   1/1     1            1           77s   kube-state-metrics                                    registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.18.0                                            app.kubernetes.io/instance=kube-prometheus-stack,app.kubernetes.io/name=kube-state-metrics
+deployment.apps/kube-prometheus-stack-operator             1/1     1            1           77s   kube-prometheus-stack                                 quay.io/prometheus-operator/prometheus-operator:v0.90.1                                                  app=kube-prometheus-stack-operator,release=kube-prometheus-stack
+
+NAME                                                               READY   AGE   CONTAINERS                     IMAGES
+statefulset.apps/alertmanager-kube-prometheus-stack-alertmanager   1/1     70s   alertmanager,config-reloader   quay.io/prometheus/alertmanager:v0.32.0,quay.io/prometheus-operator/prometheus-config-reloader:v0.90.1
+statefulset.apps/prometheus-kube-prometheus-stack-prometheus       1/1     70s   prometheus,config-reloader     quay.io/prometheus/prometheus:v3.11.2,quay.io/prometheus-operator/prometheus-config-reloader:v0.90.1
+
+NAME                                                     TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)                      AGE   SELECTOR
+service/alertmanager-operated                            ClusterIP   None            <none>        9093/TCP,9094/TCP,9094/UDP   70s   app.kubernetes.io/name=alertmanager
+service/kube-prometheus-stack-alertmanager               ClusterIP   10.43.4.11      <none>        9093/TCP,8080/TCP            77s   alertmanager=kube-prometheus-stack-alertmanager,app.kubernetes.io/name=alertmanager
+service/kube-prometheus-stack-grafana                    ClusterIP   10.43.221.56    <none>        80/TCP                       77s   app.kubernetes.io/instance=kube-prometheus-stack,app.kubernetes.io/name=grafana
+service/kube-prometheus-stack-kube-state-metrics         ClusterIP   10.43.217.116   <none>        8080/TCP                     77s   app.kubernetes.io/instance=kube-prometheus-stack,app.kubernetes.io/name=kube-state-metrics
+service/kube-prometheus-stack-operator                   ClusterIP   10.43.70.173    <none>        443/TCP                      77s   app=kube-prometheus-stack-operator,release=kube-prometheus-stack
+service/kube-prometheus-stack-prometheus                 ClusterIP   10.43.156.253   <none>        9090/TCP,8080/TCP            77s   app.kubernetes.io/name=prometheus,operator.prometheus.io/name=kube-prometheus-stack-prometheus
+service/kube-prometheus-stack-prometheus-node-exporter   ClusterIP   10.43.188.17    <none>        9100/TCP                     77s   app.kubernetes.io/instance=kube-prometheus-stack,app.kubernetes.io/name=prometheus-node-exporter
+service/prometheus-operated                              ClusterIP   None            <none>        9090/TCP                     70s   app.kubernetes.io/name=prometheus
+
+NAME                                                            READY   STATUS    RESTARTS   AGE   IP           NODE           NOMINATED NODE   READINESS GATES
+pod/alertmanager-kube-prometheus-stack-alertmanager-0           2/2     Running   0          70s   10.42.0.13   cloudvm-vnic   <none>           <none>
+pod/kube-prometheus-stack-grafana-59fbb65f86-zjdt6              3/3     Running   0          77s   10.42.0.11   cloudvm-vnic   <none>           <none>
+pod/kube-prometheus-stack-kube-state-metrics-69ff47cc6c-th2h7   1/1     Running   0          77s   10.42.0.10   cloudvm-vnic   <none>           <none>
+pod/kube-prometheus-stack-operator-6bb8d46db5-nzfhj             1/1     Running   0          77s   10.42.0.12   cloudvm-vnic   <none>           <none>
+pod/kube-prometheus-stack-prometheus-node-exporter-6sj27        1/1     Running   0          77s   10.0.1.61    cloudvm-vnic   <none>           <none>
+pod/prometheus-kube-prometheus-stack-prometheus-0               2/2     Running   0          70s   10.42.0.14   cloudvm-vnic   <none>           <none>
+
+## ingress classes
+NAME    CONTROLLER             PARAMETERS   AGE
+nginx   k8s.io/ingress-nginx   <none>       115s
+
+## node metrics
+NAME           CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+cloudvm-vnic   1072m        26%      13466Mi         56%         

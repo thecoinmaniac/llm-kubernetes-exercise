@@ -1,0 +1,23 @@
+grafana:
+  enabled: true
+  service:
+    type: ClusterIP
+
+alertmanager:
+  enabled: true
+
+prometheus:
+  service:
+    type: ClusterIP
+  prometheusSpec:
+    retention: 7d
+    scrapeInterval: 30s
+
+kubeStateMetrics:
+  enabled: true
+
+prometheus-node-exporter:
+  enabled: true
+
+defaultRules:
+  create: true

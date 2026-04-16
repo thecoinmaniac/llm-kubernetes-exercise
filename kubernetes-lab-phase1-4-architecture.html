@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kubernetes MLOps Lab (Phase 1-4) Architecture</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'JetBrains Mono', monospace;
+      background: #020617;
+      min-height: 100vh;
+      padding: 2rem;
+      color: #fff;
+    }
+    .container { max-width: 1500px; margin: 0 auto; }
+    .header { margin-bottom: 1.25rem; }
+    .header-row { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.4rem; }
+    .pulse-dot { width: 12px; height: 12px; border-radius: 999px; background: #22d3ee; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
+    h1 { font-size: 1.35rem; font-weight: 700; }
+    .subtitle { color: #94a3b8; font-size: 0.82rem; margin-left: 1.55rem; }
+    .diagram-wrap {
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid #1e293b;
+      border-radius: 14px;
+      padding: 1rem;
+      overflow-x: auto;
+    }
+    svg { width: 100%; min-width: 1300px; display: block; }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 0.9rem;
+      margin-top: 1rem;
+    }
+    .card {
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid #1e293b;
+      border-radius: 10px;
+      padding: 0.95rem;
+    }
+    .card-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.55rem; }
+    .dot { width: 8px; height: 8px; border-radius: 999px; }
+    .cyan { background: #22d3ee; }
+    .emerald { background: #34d399; }
+    .rose { background: #fb7185; }
+    .amber { background: #fbbf24; }
+    .card h3 { font-size: 0.82rem; }
+    .card ul { list-style: none; color: #94a3b8; font-size: 0.73rem; }
+    .card li { margin-bottom: 0.3rem; }
+    .footer { text-align: center; margin-top: 1rem; color: #475569; font-size: 0.72rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-row">
+        <div class="pulse-dot"></div>
+        <h1>Kubernetes MLOps Lab Architecture (Phase 1 → Phase 4)</h1>
+      </div>
+      <p class="subtitle">Single-node k3s control plane with ingress, observability, inference workload, and hardening controls</p>
+    </div>
+
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 1440 920" aria-label="Kubernetes MLOps Lab Architecture Diagram">
+        <defs>
+          <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#64748b" />
+          </marker>
+          <marker id="arrow-cyan" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#22d3ee" />
+          </marker>
+          <marker id="arrow-emerald" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#34d399" />
+          </marker>
+          <marker id="arrow-rose" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#fb7185" />
+          </marker>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+          </pattern>
+        </defs>
+
+        <rect width="100%" height="100%" fill="url(#grid)"/>
+
+        <!-- Arrows first so they stay behind components -->
+        <line x1="120" y1="420" x2="252" y2="420" stroke="#22d3ee" stroke-width="1.8" marker-end="url(#arrow-cyan)"/>
+        <text x="186" y="410" fill="#94a3b8" font-size="9" text-anchor="middle">HTTP/HTTPS + Host: ml-demo.local</text>
+
+        <line x1="455" y1="420" x2="620" y2="420" stroke="#22d3ee" stroke-width="1.8" marker-end="url(#arrow-cyan)"/>
+        <text x="536" y="410" fill="#94a3b8" font-size="9" text-anchor="middle">Ingress route /inference</text>
+
+        <line x1="805" y1="420" x2="960" y2="420" stroke="#22d3ee" stroke-width="1.8" marker-end="url(#arrow-cyan)"/>
+        <text x="883" y="410" fill="#94a3b8" font-size="9" text-anchor="middle">Service -> Pod :8000</text>
+
+        <line x1="1015" y1="465" x2="1015" y2="550" stroke="#34d399" stroke-width="1.6" marker-end="url(#arrow-emerald)"/>
+        <text x="1030" y="510" fill="#94a3b8" font-size="9">/metrics</text>
+
+        <line x1="1015" y1="635" x2="1015" y2="728" stroke="#34d399" stroke-width="1.6" marker-end="url(#arrow-emerald)"/>
+        <text x="1032" y="684" fill="#94a3b8" font-size="9">scrape target</text>
+
+        <path d="M 1080 790 C 1180 790, 1200 760, 1240 715" fill="none" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arrow)"/>
+        <text x="1170" y="785" fill="#94a3b8" font-size="8">rule eval + alert state</text>
+
+        <path d="M 790 780 C 820 820, 950 840, 980 790" fill="none" stroke="#fb923c" stroke-width="1.5" marker-end="url(#arrow)"/>
+        <text x="884" y="836" fill="#94a3b8" font-size="8">CPU/memory metrics API</text>
+
+        <path d="M 450 210 C 560 210, 560 260, 660 260" fill="none" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arrow-rose)"/>
+        <text x="555" y="202" fill="#fb7185" font-size="8">Certificate issuance (self-signed)</text>
+
+        <path d="M 660 260 C 760 260, 760 330, 730 355" fill="none" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arrow-rose)"/>
+        <text x="760" y="302" fill="#fb7185" font-size="8">TLS secret bound to ingress</text>
+
+        <path d="M 1080 580 C 1160 580, 1180 520, 1215 490" fill="none" stroke="#fb7185" stroke-width="1.3" stroke-dasharray="4,4" marker-end="url(#arrow-rose)"/>
+        <text x="1175" y="552" fill="#fb7185" font-size="8">NetworkPolicy allow from monitoring</text>
+
+        <!-- External user -->
+        <rect x="20" y="385" width="100" height="70" rx="6" fill="#0f172a"/>
+        <rect x="20" y="385" width="100" height="70" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="70" y="411" fill="white" font-size="12" font-weight="600" text-anchor="middle">Operator</text>
+        <text x="70" y="430" fill="#94a3b8" font-size="9" text-anchor="middle">curl / kubectl</text>
+
+        <!-- VM boundary -->
+        <rect x="150" y="55" width="1240" height="790" rx="14" fill="rgba(251,191,36,0.04)" stroke="#fbbf24" stroke-width="1" stroke-dasharray="8,4"/>
+        <text x="166" y="76" fill="#fbbf24" font-size="10" font-weight="600">Lab VM: /home/luna (k3s single-node)</text>
+
+        <!-- K8s cluster boundary -->
+        <rect x="180" y="90" width="1120" height="730" rx="12" fill="rgba(251,191,36,0.03)" stroke="#f59e0b" stroke-width="1" stroke-dasharray="4,4"/>
+        <text x="196" y="110" fill="#fbbf24" font-size="10" font-weight="600">Kubernetes Cluster (k3s)</text>
+
+        <!-- kube-system -->
+        <rect x="210" y="140" width="360" height="130" rx="8" fill="rgba(30,41,59,0.2)" stroke="#64748b" stroke-width="1"/>
+        <text x="224" y="158" fill="#94a3b8" font-size="9">Namespace: kube-system</text>
+
+        <rect x="228" y="174" width="104" height="42" rx="6" fill="#0f172a"/>
+        <rect x="228" y="174" width="104" height="42" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="280" y="191" fill="white" font-size="10" font-weight="600" text-anchor="middle">coredns</text>
+        <text x="280" y="205" fill="#94a3b8" font-size="8" text-anchor="middle">DNS</text>
+
+        <rect x="340" y="174" width="104" height="42" rx="6" fill="#0f172a"/>
+        <rect x="340" y="174" width="104" height="42" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="392" y="191" fill="white" font-size="10" font-weight="600" text-anchor="middle">metrics-server</text>
+        <text x="392" y="205" fill="#94a3b8" font-size="8" text-anchor="middle">resource metrics</text>
+
+        <rect x="452" y="174" width="104" height="42" rx="6" fill="#0f172a"/>
+        <rect x="452" y="174" width="104" height="42" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="504" y="191" fill="white" font-size="10" font-weight="600" text-anchor="middle">local-path</text>
+        <text x="504" y="205" fill="#94a3b8" font-size="8" text-anchor="middle">storage provisioner</text>
+
+        <!-- cert-manager -->
+        <rect x="600" y="140" width="300" height="130" rx="8" fill="rgba(30,41,59,0.2)" stroke="#64748b" stroke-width="1"/>
+        <text x="614" y="158" fill="#94a3b8" font-size="9">Namespace: cert-manager + cluster issuer</text>
+
+        <rect x="620" y="174" width="118" height="42" rx="6" fill="#0f172a"/>
+        <rect x="620" y="174" width="118" height="42" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="679" y="191" fill="white" font-size="10" font-weight="600" text-anchor="middle">cert-manager</text>
+        <text x="679" y="205" fill="#94a3b8" font-size="8" text-anchor="middle">controller/webhook</text>
+
+        <rect x="748" y="174" width="130" height="42" rx="6" fill="#0f172a"/>
+        <rect x="748" y="174" width="130" height="42" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="813" y="191" fill="white" font-size="10" font-weight="600" text-anchor="middle">ClusterIssuer</text>
+        <text x="813" y="205" fill="#94a3b8" font-size="8" text-anchor="middle">local-selfsigned</text>
+
+        <!-- ingress-nginx namespace -->
+        <rect x="270" y="330" width="350" height="165" rx="8" fill="rgba(30,41,59,0.2)" stroke="#64748b" stroke-width="1"/>
+        <text x="284" y="348" fill="#94a3b8" font-size="9">Namespace: ingress-nginx</text>
+
+        <rect x="290" y="380" width="165" height="80" rx="6" fill="#0f172a"/>
+        <rect x="290" y="380" width="165" height="80" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="372" y="407" fill="white" font-size="11" font-weight="600" text-anchor="middle">ingress-nginx</text>
+        <text x="372" y="425" fill="#94a3b8" font-size="9" text-anchor="middle">controller + LB service</text>
+        <text x="372" y="442" fill="#22d3ee" font-size="8" text-anchor="middle">edge entrypoint 80/443</text>
+
+        <!-- ml-demo namespace -->
+        <rect x="640" y="300" width="620" height="540" rx="10" fill="rgba(6, 78, 59, 0.12)" stroke="#34d399" stroke-width="1"/>
+        <text x="654" y="320" fill="#34d399" font-size="10" font-weight="600">Namespace: ml-demo</text>
+
+        <!-- ingress object -->
+        <rect x="660" y="355" width="145" height="65" rx="6" fill="#0f172a"/>
+        <rect x="660" y="355" width="145" height="65" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="732" y="380" fill="white" font-size="10" font-weight="600" text-anchor="middle">Ingress</text>
+        <text x="732" y="396" fill="#94a3b8" font-size="8" text-anchor="middle">ml-demo.local/inference</text>
+        <text x="732" y="409" fill="#94a3b8" font-size="8" text-anchor="middle">TLS redirect enabled</text>
+
+        <!-- service -->
+        <rect x="820" y="385" width="170" height="70" rx="6" fill="#0f172a"/>
+        <rect x="820" y="385" width="170" height="70" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="905" y="412" fill="white" font-size="10" font-weight="600" text-anchor="middle">Service</text>
+        <text x="905" y="428" fill="#94a3b8" font-size="8" text-anchor="middle">ml-demo-inference :8000</text>
+
+        <!-- deployment/pod -->
+        <rect x="960" y="385" width="250" height="120" rx="6" fill="#0f172a"/>
+        <rect x="960" y="385" width="250" height="120" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="1085" y="408" fill="white" font-size="10" font-weight="600" text-anchor="middle">Deployment: ml-demo-inference</text>
+        <text x="1085" y="425" fill="#94a3b8" font-size="8" text-anchor="middle">python:3.11-slim (rule-based sentiment)</text>
+        <text x="1085" y="441" fill="#94a3b8" font-size="8" text-anchor="middle">/healthz /predict /metrics</text>
+        <text x="1085" y="458" fill="#94a3b8" font-size="8" text-anchor="middle">requests/limits + probes configured</text>
+        <text x="1085" y="476" fill="#34d399" font-size="8" text-anchor="middle">HPA target + Prometheus scrape source</text>
+
+        <!-- cert + secret -->
+        <rect x="660" y="440" width="145" height="65" rx="6" fill="#0f172a"/>
+        <rect x="660" y="440" width="145" height="65" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="732" y="465" fill="white" font-size="10" font-weight="600" text-anchor="middle">Certificate</text>
+        <text x="732" y="481" fill="#94a3b8" font-size="8" text-anchor="middle">ml-demo-local-tls</text>
+        <text x="732" y="494" fill="#94a3b8" font-size="8" text-anchor="middle">secret -> ingress TLS</text>
+
+        <!-- policy controls -->
+        <rect x="660" y="525" width="280" height="110" rx="6" fill="#0f172a"/>
+        <rect x="660" y="525" width="280" height="110" rx="6" fill="rgba(136, 19, 55, 0.25)" stroke="#fb7185" stroke-width="1.2" stroke-dasharray="4,4"/>
+        <text x="800" y="548" fill="white" font-size="10" font-weight="600" text-anchor="middle">Hardening controls</text>
+        <text x="800" y="566" fill="#94a3b8" font-size="8" text-anchor="middle">ResourceQuota + LimitRange</text>
+        <text x="800" y="582" fill="#94a3b8" font-size="8" text-anchor="middle">NetworkPolicy (default deny ingress)</text>
+        <text x="800" y="598" fill="#94a3b8" font-size="8" text-anchor="middle">allow ingress from ingress-nginx + monitoring</text>
+        <text x="800" y="615" fill="#94a3b8" font-size="8" text-anchor="middle">HPA (CPU 60%, memory 70%)</text>
+
+        <!-- HPA component -->
+        <rect x="960" y="530" width="110" height="50" rx="6" fill="#0f172a"/>
+        <rect x="960" y="530" width="110" height="50" rx="6" fill="rgba(251, 146, 60, 0.3)" stroke="#fb923c" stroke-width="1.4"/>
+        <text x="1015" y="550" fill="white" font-size="10" font-weight="600" text-anchor="middle">HPA</text>
+        <text x="1015" y="566" fill="#94a3b8" font-size="8" text-anchor="middle">autoscaling/v2</text>
+
+        <!-- monitoring namespace -->
+        <rect x="960" y="610" width="300" height="210" rx="8" fill="rgba(76, 29, 149, 0.15)" stroke="#a78bfa" stroke-width="1"/>
+        <text x="974" y="630" fill="#a78bfa" font-size="10" font-weight="600">Namespace: monitoring</text>
+
+        <rect x="980" y="655" width="115" height="60" rx="6" fill="#0f172a"/>
+        <rect x="980" y="655" width="115" height="60" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.4"/>
+        <text x="1037" y="678" fill="white" font-size="10" font-weight="600" text-anchor="middle">ServiceMonitor</text>
+        <text x="1037" y="694" fill="#94a3b8" font-size="8" text-anchor="middle">release=kps</text>
+
+        <rect x="1105" y="655" width="130" height="60" rx="6" fill="#0f172a"/>
+        <rect x="1105" y="655" width="130" height="60" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.4"/>
+        <text x="1170" y="678" fill="white" font-size="10" font-weight="600" text-anchor="middle">Prometheus</text>
+        <text x="1170" y="694" fill="#94a3b8" font-size="8" text-anchor="middle">kube-prometheus-stack</text>
+
+        <rect x="980" y="725" width="130" height="60" rx="6" fill="#0f172a"/>
+        <rect x="980" y="725" width="130" height="60" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.4"/>
+        <text x="1045" y="748" fill="white" font-size="10" font-weight="600" text-anchor="middle">Grafana</text>
+        <text x="1045" y="764" fill="#94a3b8" font-size="8" text-anchor="middle">dashboards</text>
+
+        <rect x="1120" y="725" width="125" height="60" rx="6" fill="#0f172a"/>
+        <rect x="1120" y="725" width="125" height="60" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.4"/>
+        <text x="1182" y="748" fill="white" font-size="10" font-weight="600" text-anchor="middle">PrometheusRule</text>
+        <text x="1182" y="764" fill="#94a3b8" font-size="8" text-anchor="middle">ml-demo-alerts</text>
+
+        <!-- artifact strip -->
+        <rect x="210" y="670" width="720" height="150" rx="8" fill="rgba(30,41,59,0.2)" stroke="#64748b" stroke-width="1"/>
+        <text x="224" y="690" fill="#94a3b8" font-size="9">Learning artifacts (reproducibility)</text>
+        <text x="228" y="713" fill="#cbd5e1" font-size="8">• phase1-bootstrap.sh</text>
+        <text x="228" y="730" fill="#cbd5e1" font-size="8">• phase2/phase2-bootstrap.sh + kube-prometheus-values.yaml</text>
+        <text x="228" y="747" fill="#cbd5e1" font-size="8">• phase3/inference-stack.yaml</text>
+        <text x="228" y="764" fill="#cbd5e1" font-size="8">• phase4/phase4-bootstrap.sh + hardening.yaml</text>
+        <text x="228" y="781" fill="#cbd5e1" font-size="8">• reports/phase1-setup-verification.txt ... phase4-setup-verification.txt</text>
+
+        <!-- legend below boundaries -->
+        <text x="1090" y="875" fill="white" font-size="10" font-weight="600">Legend</text>
+
+        <rect x="1090" y="886" width="15" height="9" rx="2" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee"/>
+        <text x="1112" y="893" fill="#94a3b8" font-size="8">Traffic / ingress</text>
+
+        <rect x="1200" y="886" width="15" height="9" rx="2" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399"/>
+        <text x="1222" y="893" fill="#94a3b8" font-size="8">Workload / scrape</text>
+
+        <rect x="1310" y="886" width="15" height="9" rx="2" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa"/>
+        <text x="1332" y="893" fill="#94a3b8" font-size="8">Observability</text>
+
+        <line x1="1090" y1="906" x2="1105" y2="906" stroke="#fb7185" stroke-width="1.2" stroke-dasharray="4,4"/>
+        <text x="1112" y="909" fill="#94a3b8" font-size="8">Security / policy flow</text>
+
+        <rect x="1230" y="900" width="15" height="9" rx="2" fill="transparent" stroke="#fb7185" stroke-dasharray="3,3"/>
+        <text x="1252" y="907" fill="#94a3b8" font-size="8">Hardening boundary</text>
+      </svg>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <div class="card-header"><div class="dot cyan"></div><h3>Phase Flow</h3></div>
+        <ul>
+          <li>• Phase 1: k3s bootstrap and readiness checks</li>
+          <li>• Phase 2: ingress-nginx + kube-prometheus-stack</li>
+          <li>• Phase 3: inference API + ingress + ServiceMonitor</li>
+          <li>• Phase 4: TLS + HPA + quota + netpol + alert rules</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="dot emerald"></div><h3>What this lab teaches</h3></div>
+        <ul>
+          <li>• Operator-level platform validation habits</li>
+          <li>• End-to-end traffic and observability wiring</li>
+          <li>• Production-style baseline hardening controls</li>
+          <li>• Repeatable debugging workflow for K8s failures</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="dot rose"></div><h3>Next progression</h3></div>
+        <ul>
+          <li>• Phase 5A: MLflow model lifecycle + promotion gates</li>
+          <li>• Phase 5B: KServe canary serving + SLO rollout checks</li>
+          <li>• Tie promotion decisions to metrics and alerts</li>
+          <li>• Keep this diagram updated as architecture evolves</li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="footer">kubernetes-exercise • generated with Hermes architecture-diagram skill style • standalone HTML/SVG</p>
+  </div>
+</body>
+</html>

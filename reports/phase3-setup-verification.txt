@@ -1,0 +1,53 @@
+# Phase 3 Setup Verification
+Timestamp: 2026-04-15T20:20:43+00:00
+
+## workload status (ml-demo)
+NAME                                READY   UP-TO-DATE   AVAILABLE   AGE     CONTAINERS   IMAGES             SELECTOR
+deployment.apps/ml-demo-inference   1/1     1            1           4m22s   app          python:3.11-slim   app=ml-demo-inference
+
+NAME                        TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE     SELECTOR
+service/ml-demo-inference   ClusterIP   10.43.168.181   <none>        8000/TCP   4m22s   app=ml-demo-inference
+
+NAME                                          CLASS   HOSTS           ADDRESS     PORTS   AGE
+ingress.networking.k8s.io/ml-demo-inference   nginx   ml-demo.local   10.0.1.61   80      4m22s
+
+NAME                                     READY   STATUS    RESTARTS   AGE     IP           NODE           NOMINATED NODE   READINESS GATES
+pod/ml-demo-inference-7588d44584-jgt7n   1/1     Running   0          4m22s   10.42.0.16   cloudvm-vnic   <none>           <none>
+
+## ingress functional check
+GET /inference/healthz
+{"status":"ok"}
+POST /inference/predict
+{"model": "rule-based-sentiment-v1", "input": "phase 3 validation good", "label": "positive", "request_count": 6}
+
+## ServiceMonitor
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"monitoring.coreos.com/v1","kind":"ServiceMonitor","metadata":{"annotations":{},"labels":{"release":"kube-prometheus-stack"},"name":"ml-demo-inference","namespace":"monitoring"},"spec":{"endpoints":[{"interval":"15s","path":"/metrics","port":"http","scrapeTimeout":"10s"}],"namespaceSelector":{"matchNames":["ml-demo"]},"selector":{"matchLabels":{"app":"ml-demo-inference"}}}}
+  creationTimestamp: "2026-04-15T20:16:22Z"
+  generation: 1
+  labels:
+    release: kube-prometheus-stack
+  name: ml-demo-inference
+  namespace: monitoring
+  resourceVersion: "1506"
+  uid: 110521b5-4f4b-4349-bd9d-7552e2d13e55
+spec:
+  endpoints:
+  - interval: 15s
+    path: /metrics
+    port: http
+    scrapeTimeout: 10s
+  namespaceSelector:
+    matchNames:
+    - ml-demo
+  selector:
+    matchLabels:
+      app: ml-demo-inference
+
+## prometheus scrape checks
+{"status":"success","data":{"resultType":"vector","result":[{"metric":{"__name__":"up","container":"app","endpoint":"http","instance":"10.42.0.16:8000","job":"ml-demo-inference","namespace":"ml-demo","pod":"ml-demo-inference-7588d44584-jgt7n","service":"ml-demo-inference"},"value":[1776284445.490,"1"]}]}}
+{"status":"success","data":{"resultType":"vector","result":[{"metric":{"__name__":"inference_requests_total","container":"app","endpoint":"http","instance":"10.42.0.16:8000","job":"ml-demo-inference","namespace":"ml-demo","pod":"ml-demo-inference-7588d44584-jgt7n","service":"ml-demo-inference"},"value":[1776284445.500,"5"]}]}}
