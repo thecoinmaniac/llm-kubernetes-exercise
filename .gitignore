@@ -1,0 +1,39 @@
+# OS / file manager noise
+.DS_Store
+Thumbs.db
+
+# Editors / IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Python cache / virtualenv
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Local env and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_ed25519
+
+# Kubernetes local credentials
+.kube/
+kubeconfig
+
+# Logs / temporary artifacts
+*.log
+*.tmp
+tmp/
