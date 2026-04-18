@@ -6,18 +6,7 @@ import re
 import time
 from pathlib import Path
 
-import mlflow
-import pandas as pd
-import torch
-from datasets import Dataset
-from peft import LoraConfig, TaskType, get_peft_model
-from transformers import (
-    AutoModelForCausalLM,
-    AutoTokenizer,
-    DataCollatorForLanguageModeling,
-    Trainer,
-    TrainingArguments,
-)
+mlflow = None
 
 
 def safe_log_artifact(local_path: Path, artifact_path: str):
@@ -41,6 +30,42 @@ MODEL_ID = "HuggingFaceTB/SmolLM2-360M-Instruct"
 EXPERIMENT_NAME = "phase5a1-smollm2-360m-sentiment"
 
 
+def artifact_uri_requires_proxy_migration(artifact_uri: str | None) -> bool:
+    if not artifact_uri:
+        return False
+    return artifact_uri.startswith("/")
+
+
+def ensure_proxy_backed_experiment(mlflow_module, experiment_name: str) -> str:
+    from mlflow.tracking import MlflowClient
+
+    client = MlflowClient(tracking_uri=mlflow_module.get_tracking_uri())
+    desired_artifact_root = f"mlflow-artifacts:/{experiment_name}"
+    existing = client.get_experiment_by_name(experiment_name)
+
+    if existing is None:
+        client.create_experiment(experiment_name, artifact_location=desired_artifact_root)
+        mlflow_module.set_experiment(experiment_name)
+        print(f"[INFO] Created experiment {experiment_name} with artifact root {desired_artifact_root}")
+        return experiment_name
+
+    if artifact_uri_requires_proxy_migration(existing.artifact_location):
+        migrated_name = f"{experiment_name}-proxy"
+        migrated = client.get_experiment_by_name(migrated_name)
+        if migrated is None:
+            migrated_artifact_root = f"mlflow-artifacts:/{migrated_name}"
+            client.create_experiment(migrated_name, artifact_location=migrated_artifact_root)
+            print(
+                f"[WARN] Existing experiment {experiment_name} uses local artifact location "
+                f"{existing.artifact_location}. Created {migrated_name} with {migrated_artifact_root}."
+            )
+        mlflow_module.set_experiment(migrated_name)
+        return migrated_name
+
+    mlflow_module.set_experiment(experiment_name)
+    return experiment_name
+
+
 def read_jsonl(path: Path):
     rows = []
     with path.open() as f:
@@ -49,6 +74,70 @@ def read_jsonl(path: Path):
             if line:
                 rows.append(json.loads(line))
     return rows
+
+
+def map_label_value(label_value):
+    if isinstance(label_value, str):
+        norm = label_value.strip().lower()
+        if norm in {"positive", "pos", "1"}:
+            return "positive"
+        if norm in {"negative", "neg", "0"}:
+            return "negative"
+        return None
+
+    if isinstance(label_value, bool):
+        return None
+
+    if isinstance(label_value, (int, float)):
+        if int(label_value) == 1:
+            return "positive"
+        if int(label_value) == 0:
+            return "negative"
+        return None
+
+    return None
+
+
+def convert_hf_rows_to_binary_rows(rows):
+    out = []
+    for row in rows:
+        text = row.get("text")
+        if not isinstance(text, str) or not text.strip():
+            continue
+        mapped = map_label_value(row.get("label"))
+        if mapped is None:
+            continue
+        out.append({"text": text.strip(), "label": mapped})
+    return out
+
+
+def load_rows_from_hf_dataset(dataset_name: str, config_name: str | None, train_split: str, eval_split: str, train_limit: int, eval_limit: int):
+    from datasets import load_dataset
+
+    kwargs = {}
+    if config_name:
+        kwargs["name"] = config_name
+
+    ds = load_dataset(dataset_name, **kwargs)
+    if train_split not in ds:
+        raise ValueError(f"train split '{train_split}' not found. Available: {list(ds.keys())}")
+    if eval_split not in ds:
+        raise ValueError(f"eval split '{eval_split}' not found. Available: {list(ds.keys())}")
+
+    train_rows = convert_hf_rows_to_binary_rows(ds[train_split])
+    eval_rows = convert_hf_rows_to_binary_rows(ds[eval_split])
+
+    if train_limit > 0:
+        train_rows = train_rows[:train_limit]
+    if eval_limit > 0:
+        eval_rows = eval_rows[:eval_limit]
+
+    if not train_rows:
+        raise ValueError("No usable binary train rows after mapping labels/text")
+    if not eval_rows:
+        raise ValueError("No usable binary eval rows after mapping labels/text")
+
+    return train_rows, eval_rows
 
 
 def prompt_for(text: str) -> str:
@@ -66,6 +155,9 @@ def normalize_label(text: str) -> str:
 
 
 def evaluate(model, tokenizer, rows, max_new_tokens=3):
+    import pandas as pd
+    import torch
+
     model.eval()
     device = next(model.parameters()).device
     preds = []
@@ -121,12 +213,33 @@ def make_train_texts(rows):
 
 
 def main():
+    global mlflow
+
+    import mlflow
+    import torch
+    from datasets import Dataset
+    from peft import LoraConfig, TaskType, get_peft_model
+    from transformers import (
+        AutoModelForCausalLM,
+        AutoTokenizer,
+        DataCollatorForLanguageModeling,
+        Trainer,
+        TrainingArguments,
+    )
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--project-root", default=".")
     parser.add_argument("--tracking-uri", default=os.getenv("MLFLOW_TRACKING_URI", "http://127.0.0.1:5001"))
     parser.add_argument("--max-steps", type=int, default=20)
     parser.add_argument("--learning-rate", type=float, default=2e-4)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--dataset-source", choices=["local_jsonl", "hf"], default="local_jsonl")
+    parser.add_argument("--hf-dataset", default="rotten_tomatoes")
+    parser.add_argument("--hf-config", default="")
+    parser.add_argument("--hf-train-split", default="train")
+    parser.add_argument("--hf-eval-split", default="validation")
+    parser.add_argument("--hf-train-limit", type=int, default=0)
+    parser.add_argument("--hf-eval-limit", type=int, default=0)
     args = parser.parse_args()
 
     project_root = Path(args.project_root).resolve()
@@ -135,14 +248,32 @@ def main():
     out_dir = lab_root / "artifacts"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    train_rows = read_jsonl(data_dir / "train.jsonl")
-    eval_rows = read_jsonl(data_dir / "eval.jsonl")
+    if args.dataset_source == "local_jsonl":
+        train_rows = read_jsonl(data_dir / "train.jsonl")
+        eval_rows = read_jsonl(data_dir / "eval.jsonl")
+    else:
+        train_rows, eval_rows = load_rows_from_hf_dataset(
+            dataset_name=args.hf_dataset,
+            config_name=args.hf_config or None,
+            train_split=args.hf_train_split,
+            eval_split=args.hf_eval_split,
+            train_limit=args.hf_train_limit,
+            eval_limit=args.hf_eval_limit,
+        )
 
     mlflow.set_tracking_uri(args.tracking_uri)
-    mlflow.set_experiment(EXPERIMENT_NAME)
+    active_experiment_name = ensure_proxy_backed_experiment(mlflow, EXPERIMENT_NAME)
 
     print(f"[INFO] Tracking URI: {args.tracking_uri}")
+    print(f"[INFO] Active experiment: {active_experiment_name}")
     print(f"[INFO] Model: {MODEL_ID}")
+    print(f"[INFO] Dataset source: {args.dataset_source}")
+    if args.dataset_source == "hf":
+        print(
+            f"[INFO] HF dataset: {args.hf_dataset} config={args.hf_config or '<default>'} "
+            f"train_split={args.hf_train_split} eval_split={args.hf_eval_split} "
+            f"train_limit={args.hf_train_limit} eval_limit={args.hf_eval_limit}"
+        )
     print(f"[INFO] Train samples: {len(train_rows)}, Eval samples: {len(eval_rows)}")
 
     tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
@@ -157,6 +288,11 @@ def main():
             {
                 "stage": "baseline",
                 "model_id": MODEL_ID,
+                "dataset_source": args.dataset_source,
+                "hf_dataset": args.hf_dataset if args.dataset_source == "hf" else "",
+                "hf_config": args.hf_config if args.dataset_source == "hf" else "",
+                "hf_train_split": args.hf_train_split if args.dataset_source == "hf" else "",
+                "hf_eval_split": args.hf_eval_split if args.dataset_source == "hf" else "",
                 "eval_samples": len(eval_rows),
             }
         )
@@ -218,6 +354,11 @@ def main():
             {
                 "stage": "finetuned_lora",
                 "base_model_id": MODEL_ID,
+                "dataset_source": args.dataset_source,
+                "hf_dataset": args.hf_dataset if args.dataset_source == "hf" else "",
+                "hf_config": args.hf_config if args.dataset_source == "hf" else "",
+                "hf_train_split": args.hf_train_split if args.dataset_source == "hf" else "",
+                "hf_eval_split": args.hf_eval_split if args.dataset_source == "hf" else "",
                 "baseline_run_id": baseline_run_id,
                 "train_samples": len(train_rows),
                 "max_steps": args.max_steps,

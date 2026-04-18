@@ -53,11 +53,33 @@ Why: keeps the script environment simple and avoids DNS/TLS complexity during la
 
 ## Run it
 
+### Local JSONL mode (existing)
+
 ```bash
 cd /home/ubuntu/weekly-exercise/kubernetes-exercise
 source .venv/bin/activate
 bash phase5/phase5a1/run_phase5a1.sh
 ```
+
+### Hugging Face dataset mode (new)
+
+```bash
+cd /home/ubuntu/weekly-exercise/kubernetes-exercise
+source .venv/bin/activate
+bash phase5/phase5a1/run_phase5a1.sh \
+  --dataset-source hf \
+  --hf-dataset rotten_tomatoes \
+  --hf-train-split train \
+  --hf-eval-split validation \
+  --hf-train-limit 80 \
+  --hf-eval-limit 40 \
+  --max-steps 2
+```
+
+Notes:
+- `run_phase5a1.sh` now forwards extra CLI flags to `run_phase5a1.py`.
+- Use `--hf-train-limit` and `--hf-eval-limit` to keep CPU runs fast.
+- For full-size experiments, remove limits (`0` = no cap).
 
 ## Expected outputs
 

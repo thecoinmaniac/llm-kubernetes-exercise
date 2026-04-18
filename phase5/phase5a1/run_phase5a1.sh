@@ -52,7 +52,7 @@ if ! grep -q "Forwarding from" /tmp/mlflow-phase5a1-pf.log; then
 fi
 
 echo "[2/4] Running baseline + LoRA fine-tune + eval logging"
-python "$LAB_DIR/run_phase5a1.py" --project-root "$ROOT_DIR" --tracking-uri "http://127.0.0.1:5001"
+python "$LAB_DIR/run_phase5a1.py" --project-root "$ROOT_DIR" --tracking-uri "http://127.0.0.1:5001" "$@"
 
 echo "[3/4] Quick health check on MLflow endpoint"
 curl -s -o /dev/null -w 'MLflow HTTP %{http_code}\n' http://127.0.0.1:5001/
