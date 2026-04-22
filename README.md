@@ -1,99 +1,34 @@
-# Kubernetes MLOps Lab — Phase 1 to Phase 4 (Operator Learning Edition)
+# Kubernetes LLMOps Lab Runbook (k3s single-node -> MLflow -> baseline vs LoRA compare)
 
 ![Repo](https://img.shields.io/badge/repo-llm--kubernetes--exercise-0ea5e9)
 ![Kubernetes](https://img.shields.io/badge/kubernetes-k3s-326ce5)
-![Phase](https://img.shields.io/badge/phases-1--4-22c55e)
+![Scope](https://img.shields.io/badge/scope-phase1--phase5a1-22c55e)
 ![License](https://img.shields.io/badge/license-MIT-f59e0b)
 
-Location: `/home/ubuntu/weekly-exercise/kubernetes-exercise`
+Project root on this server:
+- `/home/luna/weekly-exercise/kubernetes-exercise`
 
-License: `MIT` (see `LICENSE`)
+License:
+- MIT (`LICENSE`)
 
-This project is a hands-on Kubernetes lab designed to build real operator muscle for AI/LLMOps infrastructure.
+## What this repo helps you do
 
-Instead of only reading concepts, you run a full platform lifecycle:
-- bootstrap cluster
-- install ingress and observability
-- deploy and expose an inference-like service
-- add production hardening controls
+This repo is an operator-first learning path for running a local Kubernetes MLOps stack end-to-end:
+1) bootstrap a k3s single-node cluster
+2) install ingress and observability foundations
+3) deploy and harden a demo inference service
+4) deploy MLflow tracking in-cluster
+5) run baseline vs fine-tuned (LoRA) model comparison and log to MLflow
 
-By the end, you should be able to operate, validate, and troubleshoot a practical K8s baseline for future model-serving phases.
-
----
-
-## 1) What we are trying to learn (big picture)
-
-### Core learning outcomes
-
-1. Platform bootstrapping discipline
-   - Build a clean single-node control plane with reproducible scripts.
-   - Understand what “cluster ready” actually means (not just `kubectl get nodes`).
-
-2. Traffic + observability foundations
-   - Route app traffic with ingress.
-   - Prove metrics scraping end-to-end using Prometheus ServiceMonitor.
-
-3. Inference workload operations
-   - Deploy a small API that behaves like a model endpoint (`/predict`, `/healthz`, `/metrics`).
-   - Validate behavior through ingress path, not only internal cluster calls.
-
-4. Baseline hardening controls
-   - Apply TLS, HPA, ResourceQuota, LimitRange, NetworkPolicy, and alert rules.
-   - Understand how security/performance controls interact and fail.
-
-5. Operator-first debugging mindset
-   - Move from “it doesn’t work” to a systematic fault-isolation sequence.
-   - Distinguish app issues, networking issues, policy issues, and observability issues.
-
-### Why this matters for AI/LLMOps
-
-Real AI systems fail at the platform edges:
-- ingress misrouting
-- missing/incorrect metrics
-- runaway resource usage
-- insufficient isolation
-- no actionable alerts
-
-This lab gives you a repeatable baseline before moving to Phase 5 workloads like KServe, MLflow, or canary deployments.
+The goal is not only “it works once”, but “you can rerun, verify, debug, and promote with evidence”.
 
 ---
 
-## 2) Current lab topology (what exists now)
+## 1) Repository layout
 
-- Kubernetes distro: `k3s` (single-node)
-- Kubeconfig: `/home/ubuntu/.kube/config`
-- Ingress: `ingress-nginx` (namespace: `ingress-nginx`)
-- Observability: `kube-prometheus-stack` (namespace: `monitoring`)
-- Demo workload namespace: `ml-demo`
-- Demo host: `ml-demo.local`
-- Architecture diagrams:
-  - `/home/ubuntu/weekly-exercise/kubernetes-exercise/kubernetes-lab-phase1-4-architecture.html` (Phase 1-4 platform flow)
-  - `/home/ubuntu/weekly-exercise/kubernetes-exercise/phase5/mlflow-proof-flow-architecture.html` (MLflow proof -> gate -> promote/reject flow)
-
-To open the architecture diagrams:
-
-```bash
-xdg-open /home/ubuntu/weekly-exercise/kubernetes-exercise/kubernetes-lab-phase1-4-architecture.html
-xdg-open /home/ubuntu/weekly-exercise/kubernetes-exercise/phase5/mlflow-proof-flow-architecture.html
-```
-
-Phase completion status in this folder:
-- Phase 1: complete
-- Phase 2: complete
-- Phase 3: complete
-- Phase 4: complete
-- Phase 5A (MLflow tracking baseline): complete
-
-Evidence reports are under `reports/`.
-
----
-
-## 3) Project structure
-
-```
+```text
 kubernetes-exercise/
 ├── README.md
-├── kubernetes-lab-phase1-4-architecture.html
 ├── phase1-bootstrap.sh
 ├── phase2/
 │   ├── phase2-bootstrap.sh
@@ -112,165 +47,196 @@ kubernetes-exercise/
 │       ├── README.md
 │       ├── run_phase5a1.sh
 │       ├── run_phase5a1.py
-│       └── data/
+│       ├── data/
+│       └── artifacts/
 └── reports/
-    ├── phase1-setup-verification.txt
-    ├── phase2-setup-verification.txt
-    ├── phase3-setup-verification.txt
-    ├── phase4-setup-verification.txt
-    ├── phase5a-mlflow-setup-verification.txt
-    └── phase5a1-smollm2-mlflow-comparison-verification.txt
 ```
 
 ---
 
-## 4) How to run each phase (with purpose)
+## 2) Prerequisites and one-time setup
 
-Set kubeconfig once per shell:
+### 2.1 Host requirements
 
-```bash
-export KUBECONFIG=$HOME/.kube/config
-cd /home/ubuntu/weekly-exercise/kubernetes-exercise
-```
+Recommended minimums for smooth Phase 5A.1 runs:
+- 4 vCPU
+- 16GB+ RAM
+- 30GB+ free disk
+- outbound internet access (chart pulls, Python packages, HF model/dataset)
 
-### Phase 1 — Base cluster bootstrap
+### 2.2 Tooling checks
 
 Run:
+```bash
+command -v curl
+command -v git
+command -v kubectl || true
+command -v helm || true
+python3 --version
+```
 
+What this accomplishes:
+- verifies shell prerequisites before scripts run
+- confirms Python exists for Phase 5A.1 runner
+- shows whether kubectl/helm are already present
+
+### 2.3 Set project and kubeconfig context
+
+Run:
+```bash
+export PROJECT_ROOT=/home/luna/weekly-exercise/kubernetes-exercise
+cd "$PROJECT_ROOT"
+export KUBECONFIG=/home/luna/.kube/config
+```
+
+What this accomplishes:
+- normalizes working directory for all commands in this README
+- prevents kubectl from accidentally targeting the wrong context
+
+---
+
+## 3) Phase 1 - bootstrap k3s single-node cluster
+
+Run:
 ```bash
 bash phase1-bootstrap.sh
 ```
 
-What this teaches:
-- k3s installation and baseline validation
-- kubeconfig ownership and local operator setup
-- why we disable built-in Traefik when standardizing on ingress-nginx later
+What this script accomplishes:
+- installs/configures k3s control-plane on single node
+- prepares kubeconfig for local operator usage
+- validates core system readiness before moving to add-ons
 
-Success checks:
-
+Verify after run:
 ```bash
 kubectl cluster-info
 kubectl get nodes -o wide
 kubectl -n kube-system get pods
+kubectl top nodes
 ```
+
+What each verification checks:
+- `cluster-info`: API server reachability
+- `get nodes`: node state is `Ready`
+- `kube-system pods`: control-plane dependencies are healthy
+- `top nodes`: metrics-server path is working
 
 ---
 
-### Phase 2 — Ingress + observability foundation
+## 4) Phase 2 - ingress + observability foundation
 
 Run:
-
 ```bash
 bash phase2/phase2-bootstrap.sh
 ```
 
-What this teaches:
-- ingress controller installation and traffic edge standardization
-- monitoring stack installation and namespace-level observability
-- practical Helm lifecycle (`repo add`, `upgrade --install`, `--wait`)
+What this script accomplishes:
+- installs `ingress-nginx` in `ingress-nginx` namespace
+- installs `kube-prometheus-stack` in `monitoring` namespace
+- waits for chart resources to become ready
 
-Success checks:
-
+Verify after run:
 ```bash
 kubectl -n ingress-nginx get pods,svc
 kubectl -n monitoring get pods,svc
 kubectl get ingressclass
 ```
 
+What each verification checks:
+- ingress controller pods and service are healthy
+- Prometheus/Grafana/operator pods are healthy
+- `IngressClass` exists so new Ingress objects can bind correctly
+
 ---
 
-### Phase 3 — Inference-like workload + metrics
+## 5) Phase 3 - deploy inference-like workload
 
 Run:
-
 ```bash
 kubectl apply -f phase3/inference-stack.yaml
 kubectl -n ml-demo rollout status deploy/ml-demo-inference --timeout=240s
 ```
 
-What this teaches:
-- deployment/service/ingress wiring
-- health/readiness/liveness in runtime behavior
-- Prometheus ServiceMonitor discovery with proper labels
+What this accomplishes:
+- creates deployment/service/ingress for demo workload (`ml-demo` namespace)
+- ensures the deployment reached available state before testing traffic
 
-Functional validation (replace `<NODE_IP>`):
-
+Functional checks:
 ```bash
-curl -sS -H 'Host: ml-demo.local' http://<NODE_IP>/inference/healthz
-curl -sS -H 'Host: ml-demo.local' -X POST http://<NODE_IP>/inference/predict \
+NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
+curl -sS -H 'Host: ml-demo.local' "http://${NODE_IP}/inference/healthz"
+curl -sS -H 'Host: ml-demo.local' -X POST "http://${NODE_IP}/inference/predict" \
   -H 'Content-Type: application/json' \
   -d '{"text":"this is good"}'
 ```
 
-Metrics validation:
+What this checks:
+- ingress routing from edge to service
+- API behavior on both health and predict endpoints
 
+Metrics checks:
 ```bash
 kubectl -n monitoring port-forward svc/kube-prometheus-stack-prometheus 9090:9090
 curl -sS 'http://127.0.0.1:9090/api/v1/query?query=up%7Bjob%3D%22ml-demo-inference%22%7D'
 curl -sS 'http://127.0.0.1:9090/api/v1/query?query=inference_requests_total'
 ```
 
-Expected:
-- `up{job="ml-demo-inference"}` == 1
-- `inference_requests_total` exists and increases as you call `/predict`
+What this checks:
+- `up{job="ml-demo-inference"}` should be 1
+- request counter exists and increases as you call predict API
 
 ---
 
-### Phase 4 — Hardening baseline
+## 6) Phase 4 - hardening baseline (TLS, policy, autoscaling)
 
 Run:
-
 ```bash
 bash phase4/phase4-bootstrap.sh
 ```
 
-What this teaches:
-- TLS issuance and ingress TLS integration
-- autoscaling policy with HPA
-- namespace guardrails with quotas/limits
-- network isolation with default-deny + explicit allow rules
-- alert-as-code with PrometheusRule
+What this script accomplishes:
+- installs cert-manager and issues local TLS certs
+- applies HPA + ResourceQuota + LimitRange
+- applies NetworkPolicy baseline
+- applies Prometheus alert rules
 
-Validation checks:
-
+Verify hardening resources:
 ```bash
 kubectl -n ml-demo get ingress,certificate,hpa,resourcequota,limitrange,networkpolicy
 kubectl -n monitoring get prometheusrule ml-demo-alerts
 ```
 
-HTTP→HTTPS redirect expected:
-
+Traffic behavior checks:
 ```bash
-curl -s -o /dev/null -w '%{http_code}\n' -H 'Host: ml-demo.local' http://<NODE_IP>/inference/healthz
+curl -s -o /dev/null -w '%{http_code}\n' -H 'Host: ml-demo.local' "http://${NODE_IP}/inference/healthz"
+curl -k -sS --resolve ml-demo.local:443:${NODE_IP} https://ml-demo.local/inference/healthz
 ```
 
-HTTPS functional test:
+Expected behavior:
+- HTTP path typically redirects to HTTPS (expected in hardened mode)
+- HTTPS health endpoint returns success
 
-```bash
-curl -k -sS --resolve ml-demo.local:443:<NODE_IP> https://ml-demo.local/inference/healthz
-curl -k -sS --resolve ml-demo.local:443:<NODE_IP> -X POST https://ml-demo.local/inference/predict \
-  -H 'Content-Type: application/json' \
-  -d '{"text":"phase4 good"}'
-```
+---
 
-### Phase 5A — MLflow tracking baseline
+## 7) Phase 5A - deploy MLflow tracking in cluster
 
 Run:
-
 ```bash
 bash phase5/phase5-mlflow-bootstrap.sh
 ```
 
-What this teaches:
-- operating an in-cluster MLflow control-plane service
-- backend/artifact storage tradeoffs (SQLite + PVC in lab mode)
-- ingress + TLS for MLOps tooling endpoint
-- API-level health checks before model lifecycle workflows
+What this script accomplishes:
+- applies MLflow stack manifest (namespace, PVC, deployment, service, certificate, ingress)
+- waits for deployment rollout and certificate readiness
+- prints a resource snapshot for operator verification
 
-Validation checks:
-
+Validate MLflow resources:
 ```bash
 kubectl -n mlflow get deploy,po,svc,pvc,ingress,certificate
+```
+
+Validate endpoint (ingress path):
+```bash
 NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
 curl -k -I --resolve mlflow.local:443:${NODE_IP} https://mlflow.local/
 curl -k --resolve mlflow.local:443:${NODE_IP} \
@@ -279,153 +245,128 @@ curl -k --resolve mlflow.local:443:${NODE_IP} \
   -d '{"max_results":10}'
 ```
 
-Expected:
-- MLflow deployment ready (1/1)
-- certificate `mlflow-local-tls` is Ready
-- HTTP 200 from MLflow UI endpoint
-- experiments API returns JSON with `Default` experiment
+What this checks:
+- UI path responds over TLS
+- tracking API is functional and returns JSON
 
-Phase 5A.1 mini-lab (baseline vs fine-tuned SmolLM2):
+Fallback when ingress path is constrained:
+```bash
+kubectl -n mlflow port-forward svc/mlflow-server 5001:5000
+curl -I http://127.0.0.1:5001/
+curl -X POST http://127.0.0.1:5001/api/2.0/mlflow/experiments/search \
+  -H 'Content-Type: application/json' \
+  -d '{"max_results":10}'
+```
 
+---
+
+## 8) Phase 5A.1 - baseline vs LoRA fine-tune comparison
+
+First-time Python env setup:
+```bash
+cd "$PROJECT_ROOT"
+python3 -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip wheel
+pip install --index-url https://download.pytorch.org/whl/cpu torch
+pip install transformers==4.45.2 datasets==2.21.0 mlflow==2.16.2 peft==0.12.0 accelerate==0.34.2 scikit-learn pandas sentencepiece
+```
+
+What this accomplishes:
+- creates isolated runtime for repeatable experiment runs
+- installs CPU-safe torch and required model/eval/tracking libraries
+
+Run local JSONL mini-lab:
 ```bash
 source .venv/bin/activate
 bash phase5/phase5a1/run_phase5a1.sh
 ```
 
-Outputs:
-- local comparison artifact: `phase5/phase5a1/artifacts/comparison.json`
-- verification report: `reports/phase5a1-smollm2-mlflow-comparison-verification.txt`
+Run Hugging Face dataset mode:
+```bash
+source .venv/bin/activate
+bash phase5/phase5a1/run_phase5a1.sh \
+  --dataset-source hf \
+  --hf-dataset rotten_tomatoes \
+  --hf-train-split train \
+  --hf-eval-split validation \
+  --hf-train-limit 80 \
+  --hf-eval-limit 40 \
+  --max-steps 2
+```
+
+Run full-size comparison (no limits):
+```bash
+source .venv/bin/activate
+bash phase5/phase5a1/run_phase5a1.sh \
+  --dataset-source hf \
+  --hf-dataset rotten_tomatoes \
+  --hf-train-split train \
+  --hf-eval-split validation \
+  --max-steps 20
+```
+
+What this runner accomplishes:
+- starts temporary MLflow port-forward
+- executes baseline eval
+- applies LoRA fine-tune and re-evals on same split
+- logs params/metrics to MLflow
+- writes local artifacts (predictions/comparison/adapter)
+
+Artifacts produced:
+- `phase5/phase5a1/artifacts/baseline_predictions.csv`
+- `phase5/phase5a1/artifacts/finetuned_predictions.csv`
+- `phase5/phase5a1/artifacts/comparison.json`
+- `phase5/phase5a1/artifacts/lora-adapter/*`
 
 ---
 
-## 5) Failure modes and debugging playbook
+## 9) Troubleshooting playbook
 
-Use this sequence every time:
-
-1) Cluster health first
+### 9.1 Cluster sanity first
 ```bash
 kubectl get nodes
 kubectl get pods -A
 ```
 
-2) Workload state
+### 9.2 Workload-specific checks
 ```bash
 kubectl -n ml-demo get deploy,po,svc,ingress
-kubectl -n ml-demo describe deploy ml-demo-inference
+kubectl -n mlflow get deploy,po,svc,ingress,pvc,certificate
 ```
 
-3) Ingress routing and edge behavior
+### 9.3 Port-forward conflicts
+If a script says port 5001 already in use:
 ```bash
-kubectl -n ingress-nginx get pods,svc
-kubectl -n ml-demo describe ingress ml-demo-inference
+ss -ltn '( sport = :5001 )'
+pkill -f 'kubectl -n mlflow port-forward svc/mlflow-server 5001:5000' || true
 ```
 
-4) Metrics discovery path
-```bash
-kubectl -n monitoring get servicemonitor
-kubectl -n monitoring get pods
-```
-
-5) Policy and hardening interactions
-```bash
-kubectl -n ml-demo get networkpolicy
-kubectl -n ml-demo get resourcequota,limitrange,hpa
-```
-
-Common pitfalls:
-- Metrics missing: wrong ServiceMonitor labels or endpoint port mismatch
-- HTTPS failing: certificate not Ready or wrong host/SNI in curl
-- Direct pod access blocked: expected due to default-deny ingress policy
-- HPA `<unknown>`: metrics-server or stabilization lag
+### 9.4 MLflow artifact upload pitfalls
+Current repo is configured for proxy artifact mode. If you still see artifact errors:
+- check experiment artifact root in MLflow (legacy experiments may still point to `/mlflow-data/...`)
+- use/create proxy-backed experiment (`mlflow-artifacts:/...`)
 
 ---
 
-## 6) Learning checkpoints (self-assessment rubric)
+## 10) Learning checkpoints
 
-Mark complete only if you can explain and demonstrate each item:
-
-- [ ] I can bootstrap cluster and explain each validation check.
-- [ ] I can install ingress + monitoring and verify both are healthy.
-- [ ] I can expose an inference API through ingress and test routing.
-- [ ] I can prove Prometheus scrapes app metrics and read query results.
-- [ ] I can enforce TLS/HPA/quota/policy/alerts and validate each one.
-- [ ] I can debug failures with a repeatable operator sequence.
-
----
-
-## 7) Suggested practice drills (repeatable labs)
-
-Drill A — Metrics break/fix
-- Intentionally change ServiceMonitor label.
-- Observe `up{job="ml-demo-inference"}` dropping/missing.
-- Restore label and verify recovery.
-
-Drill B — Network policy reasoning
-- Temporarily tighten policy to block monitoring scrape.
-- Observe scrape failures.
-- Re-open only required traffic and verify least-privilege operation.
-
-Drill C — Capacity behavior
-- Generate load against `/predict`.
-- Observe HPA signals and resource pressure.
-- Tune requests/limits to reduce instability.
-
-Drill D — TLS operational confidence
-- Rotate/recreate certificate.
-- Validate ingress still serves expected host with correct secret.
+Mark complete only if you can do these without guesswork:
+- [ ] Bootstrap cluster and explain each readiness check
+- [ ] Validate ingress and observability end-to-end
+- [ ] Deploy and test inference workload via ingress
+- [ ] Explain and validate hardening controls interaction
+- [ ] Operate MLflow in-cluster and query tracking API
+- [ ] Run baseline vs LoRA compare and interpret promotion trade-offs
 
 ---
 
-## 8) How to use this folder as a learning workbook
+## 11) Next phase recommendation
 
-For each run:
-1. Execute phase script/manifest.
-2. Capture command outputs in `reports/` (or a dated subfolder).
-3. Write 3 bullets:
-   - what changed
-   - what failed (if anything)
-   - how you validated success
+Phase 5A.2 (recommended next):
+- implement automated promotion gate script
+- read latest baseline/finetuned runs from MLflow
+- emit deterministic `PROMOTE` / `REJECT` based on thresholds (accuracy, unknown_rate, latency)
 
-This turns one-time setup into reusable operator knowledge.
-
----
-
-## 9) Next phase preview
-
-Phase 5A is now complete (MLflow tracking baseline).
-
-Phase 5B should focus on serving and progressive delivery:
-- KServe deployment with canary rollout and promotion gates.
-- SLO-based promotion/rollback using Prometheus signals.
-
-Recommended Phase 5B learning objective:
-“Move from tracked model versions in MLflow to controlled live serving with measurable promotion criteria (latency, error rate, and rollback path).”
-
----
-
-## 10) Quick command reference
-
-```bash
-# Enter lab
-cd /home/ubuntu/weekly-exercise/kubernetes-exercise
-export KUBECONFIG=$HOME/.kube/config
-
-# Re-run phases
-bash phase1-bootstrap.sh
-bash phase2/phase2-bootstrap.sh
-kubectl apply -f phase3/inference-stack.yaml
-bash phase4/phase4-bootstrap.sh
-bash phase5/phase5-mlflow-bootstrap.sh
-
-# Snapshot state
-kubectl get nodes -o wide
-kubectl get ns
-kubectl -n ml-demo get all
-kubectl -n mlflow get deploy,po,svc,ingress,certificate,pvc
-kubectl -n monitoring get pods
-```
-
-If this README and the scripts are kept in sync, this folder acts as both:
-- execution runbook
-- interview-grade learning artifact
-- repeatable baseline for Phase 5+ MLOps labs
+Then move to Phase 5B:
+- test serving deployment with progressive rollout and rollback criteria.
