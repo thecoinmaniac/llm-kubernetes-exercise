@@ -9,7 +9,7 @@ Primary outcomes:
 - prepare base for Phase 5A.1 (baseline vs fine-tuned compare)
 
 Project folder:
-- `/home/luna/weekly-exercise/kubernetes-exercise/phase5`
+- `$PROJECT_ROOT/phase5` (after setup below)
 
 ---
 
@@ -38,9 +38,19 @@ Required foundation from earlier phases:
 - ingress-nginx installed
 - cert-manager installed with `ClusterIssuer/local-selfsigned`
 
+Set location-agnostic project root first:
+```bash
+cd /home/ubuntu
+# If you already cloned previously, skip the next line
+git clone https://github.com/thecoinmaniac/llm-kubernetes-exercise.git
+cd llm-kubernetes-exercise
+export PROJECT_ROOT="$(pwd)"
+```
+
 Quick checks:
 ```bash
-export KUBECONFIG=/home/luna/.kube/config
+cd "$PROJECT_ROOT"
+export KUBECONFIG=/home/ubuntu/.kube/config
 kubectl get nodes
 kubectl -n ingress-nginx get pods
 kubectl -n cert-manager get pods
@@ -57,7 +67,7 @@ What these checks accomplish:
 
 Run:
 ```bash
-cd /home/luna/weekly-exercise/kubernetes-exercise
+cd "$PROJECT_ROOT"
 bash phase5/phase5-mlflow-bootstrap.sh
 ```
 
@@ -148,7 +158,7 @@ Operational nuance:
 - cause: wrong/empty kubeconfig context
 - fix:
 ```bash
-export KUBECONFIG=/home/luna/.kube/config
+export KUBECONFIG=/home/ubuntu/.kube/config
 ```
 
 2) Ingress curl times out

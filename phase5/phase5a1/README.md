@@ -11,7 +11,7 @@ Model:
 - `HuggingFaceTB/SmolLM2-360M-Instruct`
 
 Folder:
-- `/home/luna/weekly-exercise/kubernetes-exercise/phase5/phase5a1`
+- `$PROJECT_ROOT/phase5/phase5a1` (after setup below)
 
 ---
 
@@ -42,7 +42,12 @@ Folder:
 
 Run from repository root:
 ```bash
-cd /home/luna/weekly-exercise/kubernetes-exercise
+cd /home/ubuntu
+# If you already cloned previously, skip the next line
+git clone https://github.com/thecoinmaniac/llm-kubernetes-exercise.git
+cd llm-kubernetes-exercise
+export PROJECT_ROOT="$(pwd)"
+cd "$PROJECT_ROOT"
 python3 -m venv .venv
 source .venv/bin/activate
 pip install --upgrade pip wheel
@@ -56,7 +61,7 @@ What this accomplishes:
 
 Kubernetes context for script:
 ```bash
-export KUBECONFIG=/home/luna/.kube/config
+export KUBECONFIG=/home/ubuntu/.kube/config
 ```
 
 What this accomplishes:
@@ -167,7 +172,7 @@ curl -s -X POST http://127.0.0.1:5001/api/2.0/mlflow/runs/search \
 ### 6.3 Check local comparison artifact
 
 ```bash
-cat /home/luna/weekly-exercise/kubernetes-exercise/phase5/phase5a1/artifacts/comparison.json
+cat "$PROJECT_ROOT"/phase5/phase5a1/artifacts/comparison.json
 ```
 
 ---
@@ -185,7 +190,7 @@ pkill -f 'kubectl -n mlflow port-forward svc/mlflow-server 5001:5000' || true
 2) `kubectl` cannot reach cluster from script
 - fix:
 ```bash
-export KUBECONFIG=/home/luna/.kube/config
+export KUBECONFIG=/home/ubuntu/.kube/config
 ```
 
 3) Long runs look “silent”

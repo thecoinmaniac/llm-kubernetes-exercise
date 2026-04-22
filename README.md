@@ -5,8 +5,9 @@
 ![Scope](https://img.shields.io/badge/scope-phase1--phase5a1-22c55e)
 ![License](https://img.shields.io/badge/license-MIT-f59e0b)
 
-Project root on this server:
-- `/home/luna/weekly-exercise/kubernetes-exercise`
+Project root after clone (example):
+- `/home/ubuntu/llm-kubernetes-exercise`
+- or wherever you clone the repo; this runbook uses `PROJECT_ROOT=$(pwd)` to stay location-agnostic
 
 License:
 - MIT (`LICENSE`)
@@ -80,16 +81,30 @@ What this accomplishes:
 - confirms Python exists for Phase 5A.1 runner
 - shows whether kubectl/helm are already present
 
-### 2.3 Set project and kubeconfig context
+### 2.3 Clone repository and enter project root
 
 Run:
 ```bash
-export PROJECT_ROOT=/home/luna/weekly-exercise/kubernetes-exercise
-cd "$PROJECT_ROOT"
-export KUBECONFIG=/home/luna/.kube/config
+cd /home/ubuntu
+git clone https://github.com/thecoinmaniac/llm-kubernetes-exercise.git
+cd llm-kubernetes-exercise
 ```
 
 What this accomplishes:
+- ensures you are using the canonical upstream repository
+- puts you in the repo root where all relative paths in this README are valid
+
+### 2.4 Set project and kubeconfig context
+
+Run:
+```bash
+export PROJECT_ROOT="$(pwd)"
+cd "$PROJECT_ROOT"
+export KUBECONFIG=/home/ubuntu/.kube/config
+```
+
+What this accomplishes:
+- makes project root location-agnostic (works no matter where repo was cloned)
 - normalizes working directory for all commands in this README
 - prevents kubectl from accidentally targeting the wrong context
 
