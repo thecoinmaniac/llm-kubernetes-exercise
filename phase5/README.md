@@ -29,6 +29,9 @@ Project folder:
 - `phase5a1/`
   - practical model comparison lab (baseline eval -> LoRA fine-tune -> compare)
 
+- `phase5a2/`
+  - automated promotion gate (`PROMOTE`/`REJECT`) based on MLflow run metrics
+
 ---
 
 ## 2) Prerequisites

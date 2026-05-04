@@ -376,12 +376,58 @@ Mark complete only if you can do these without guesswork:
 
 ---
 
-## 11) Next phase recommendation
+## 11) Phase 5A.2 automated promotion gate
 
-Phase 5A.2 (recommended next):
-- implement automated promotion gate script
-- read latest baseline/finetuned runs from MLflow
-- emit deterministic `PROMOTE` / `REJECT` based on thresholds (accuracy, unknown_rate, latency)
+Run:
+```bash
+source .venv/bin/activate
+bash phase5/phase5a2/run_gate.sh --experiment phase5a1-smollm2-360m-sentiment
+```
+
+What this accomplishes:
+- reads latest `baseline` and `finetuned_lora` runs from MLflow
+- applies policy in `phase5/phase5a2/gate_policy.yaml`
+- emits `phase5/phase5a2/gate_decision.json`
+- returns exit code `0` for PROMOTE and `1` for REJECT (CI-ready)
+
+---
+
+## 12) GitHub Actions + Hugging Face onboarding (manual actions)
+
+To run the new CI workflows, do these one-time actions.
+
+### 12.1 Hugging Face setup
+
+1) Create or sign in to Hugging Face account.
+2) Create a public dataset repo (example):
+- `<your-hf-username>/llm-k8s-sentiment-datasets`
+3) Create a public model repo (example):
+- `<your-hf-username>/smollm2-360m-lora-sentiment`
+4) Create an HF access token with write scope.
+
+### 12.2 GitHub repository secrets
+
+In GitHub repo settings -> Secrets and variables -> Actions, add:
+- `HF_TOKEN` (from Hugging Face)
+
+### 12.3 Self-hosted runner labels
+
+Current workflows expect these labels:
+- `self-hosted`
+- `linux`
+- `train`
+
+Attach these labels to the runner machine that can:
+- access your Kubernetes cluster (`kubectl -n mlflow ...`)
+- run Python training scripts
+- reach Hugging Face endpoints
+
+### 12.4 Available workflows
+
+- `ci-fast` (PR/push): quick unit tests and policy validation
+- `ci-train` (manual dispatch): runs Phase 5A.1 training workflow
+- `ci-gate` (manual dispatch): runs Phase 5A.2 promotion gate
 
 Then move to Phase 5B:
-- test serving deployment with progressive rollout and rollback criteria.
+- publish promoted adapter/model to Hugging Face model repo
+- deploy model-serving stack + chat UI with rollout/rollback criteria.

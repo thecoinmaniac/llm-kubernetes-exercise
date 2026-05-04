@@ -1,0 +1,40 @@
+name: ci-fast
+
+on:
+  pull_request:
+  push:
+    branches: [ master ]
+
+jobs:
+  lint-and-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pyyaml
+
+      - name: Run unit tests
+        run: |
+          pytest -q phase5/phase5a1/tests phase5/phase5a2/tests
+
+      - name: Validate gate policy YAML
+        run: |
+          python - <<'PY'
+          import yaml
+          from pathlib import Path
+          p = Path('phase5/phase5a2/gate_policy.yaml')
+          data = yaml.safe_load(p.read_text())
+          assert 'thresholds' in data
+          print('gate_policy.yaml OK')
+          PY

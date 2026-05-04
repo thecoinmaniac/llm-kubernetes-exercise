@@ -1,0 +1,42 @@
+name: ci-gate
+
+on:
+  workflow_dispatch:
+    inputs:
+      experiment_name:
+        description: "MLflow experiment name"
+        required: false
+        default: "phase5a1-smollm2-360m-sentiment"
+
+jobs:
+  evaluate-gate:
+    runs-on: [self-hosted, linux, train]
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install gate dependencies
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install --upgrade pip
+          pip install pyyaml
+
+      - name: Run promotion gate
+        run: |
+          source .venv/bin/activate
+          bash phase5/phase5a2/run_gate.sh --experiment "${{ github.event.inputs.experiment_name }}"
+
+      - name: Upload gate decision artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase5a2-gate-decision-${{ github.run_id }}
+          path: phase5/phase5a2/gate_decision.json
+          if-no-files-found: warn

@@ -1,0 +1,11 @@
+# Phase 5A.2 promotion policy
+# Candidate run is promoted only when ALL checks pass.
+
+thresholds:
+  min_delta_accuracy_vs_baseline: 0.02
+  max_unknown_rate_increase: 0.00
+  max_latency_ratio_vs_baseline: 1.15
+
+metadata:
+  policy_name: phase5a2-default-policy
+  policy_version: 1
