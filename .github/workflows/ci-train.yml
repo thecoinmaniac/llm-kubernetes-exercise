@@ -16,6 +16,9 @@ on:
         required: false
         default: "2"
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   train-phase5a1:
     runs-on: [self-hosted, linux, train]

@@ -8,6 +8,9 @@ on:
         required: false
         default: "phase5a1-smollm2-360m-sentiment"
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   evaluate-gate:
     runs-on: [self-hosted, linux, train]

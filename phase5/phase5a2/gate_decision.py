@@ -62,6 +62,12 @@ def find_runs(tracking_uri: str, experiment_name: str, run_name: str, max_result
     return response.get("runs", [])
 
 
+def resolve_experiment_candidates(experiment_name: str) -> list[str]:
+    candidates = [experiment_name]
+    if not experiment_name.endswith("-proxy"):
+        candidates.append(f"{experiment_name}-proxy")
+    return candidates
+
 def evaluate_gate(policy: dict, baseline_metrics: dict, finetuned_metrics: dict) -> dict:
     th = policy["thresholds"]
     baseline_acc = as_float(baseline_metrics.get("accuracy"))
@@ -122,14 +128,27 @@ def main() -> int:
 
     policy = load_policy(Path(args.policy))
 
-    baseline_runs = find_runs(args.tracking_uri, args.experiment, args.baseline_run_name)
-    finetuned_runs = find_runs(args.tracking_uri, args.experiment, args.finetuned_run_name)
+    baseline_runs = []
+    finetuned_runs = []
+    selected_experiment = args.experiment
+    for exp_name in resolve_experiment_candidates(args.experiment):
+        baseline_runs = find_runs(args.tracking_uri, exp_name, args.baseline_run_name)
+        finetuned_runs = find_runs(args.tracking_uri, exp_name, args.finetuned_run_name)
+        if baseline_runs and finetuned_runs:
+            selected_experiment = exp_name
+            break
 
     if not baseline_runs:
-        print("[ERROR] No baseline runs found", file=sys.stderr)
+        print(
+            f"[ERROR] No baseline runs found in experiments: {resolve_experiment_candidates(args.experiment)}",
+            file=sys.stderr,
+        )
         return 2
     if not finetuned_runs:
-        print("[ERROR] No finetuned runs found", file=sys.stderr)
+        print(
+            f"[ERROR] No finetuned runs found in experiments: {resolve_experiment_candidates(args.experiment)}",
+            file=sys.stderr,
+        )
         return 2
 
     baseline_run = baseline_runs[0]
@@ -141,7 +160,8 @@ def main() -> int:
     result = evaluate_gate(policy, baseline_metrics, finetuned_metrics)
     result["context"] = {
         "tracking_uri": args.tracking_uri,
-        "experiment": args.experiment,
+        "experiment": selected_experiment,
+        "requested_experiment": args.experiment,
         "baseline_run_id": baseline_run.get("info", {}).get("run_id"),
         "finetuned_run_id": finetuned_run.get("info", {}).get("run_id"),
         "policy_path": args.policy,
