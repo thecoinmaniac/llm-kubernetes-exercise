@@ -35,6 +35,7 @@ cleanup() {
 trap cleanup EXIT
 
 echo "[1/3] Starting MLflow port-forward on 5001"
+mkdir -p "$GATE_DIR"
 PF_LOG="$GATE_DIR/gate-portforward.log"
 : > "$PF_LOG"
 kubectl -n mlflow port-forward svc/mlflow-server 5001:5000 >"$PF_LOG" 2>&1 &
