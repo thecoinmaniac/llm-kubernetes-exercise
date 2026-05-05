@@ -1,0 +1,68 @@
+name: ci-publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      experiment_name:
+        description: "MLflow experiment name"
+        required: false
+        default: "phase5a1-smollm2-360m-sentiment"
+      hf_model_repo:
+        description: "Hugging Face model repo for the promoted LoRA adapter"
+        required: false
+        default: "thecoinmaniac/smollm2-360m-lora-sentiment"
+      dry_run:
+        description: "Validate gate + manifest without uploading to HF"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  publish-promoted-adapter:
+    runs-on: [self-hosted, linux, train]
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install publish dependencies
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install --upgrade pip
+          pip install pyyaml huggingface_hub
+
+      - name: Run gate-controlled publish
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          source .venv/bin/activate
+          ARGS=(
+            --experiment "${{ github.event.inputs.experiment_name }}"
+            --hf-repo "${{ github.event.inputs.hf_model_repo }}"
+          )
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            ARGS+=(--dry-run)
+          fi
+          bash phase5/phase5a3/run_publish.sh "${ARGS[@]}"
+
+      - name: Upload publish evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase5a3-publish-evidence-${{ github.run_id }}
+          path: |
+            phase5/phase5a2/gate_decision.json
+            phase5/phase5a3/publish_manifest.json
+          if-no-files-found: warn

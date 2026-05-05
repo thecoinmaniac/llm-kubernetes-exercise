@@ -32,6 +32,9 @@ Project folder:
 - `phase5a2/`
   - automated promotion gate (`PROMOTE`/`REJECT`) based on MLflow run metrics
 
+- `phase5a3/`
+  - gate-controlled Hugging Face publish for promoted LoRA adapters
+
 ---
 
 ## 2) Prerequisites

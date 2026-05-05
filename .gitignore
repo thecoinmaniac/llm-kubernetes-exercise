@@ -40,3 +40,6 @@ tmp/
 
 # Generated lab outputs
 phase5/phase5a1/artifacts/
+
+phase5/phase5a2/gate_decision.json
+phase5/phase5a3/publish_manifest.json
