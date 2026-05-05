@@ -35,19 +35,26 @@ cleanup() {
 trap cleanup EXIT
 
 echo "[1/4] Starting MLflow port-forward on 5001"
-kubectl -n mlflow port-forward svc/mlflow-server 5001:5000 >/tmp/mlflow-phase5a1-pf.log 2>&1 &
+PF_LOG="$LAB_DIR/artifacts/mlflow-phase5a1-pf.log"
+: > "$PF_LOG"
+kubectl -n mlflow port-forward svc/mlflow-server 5001:5000 >"$PF_LOG" 2>&1 &
 PF_PID=$!
 
 for _ in $(seq 1 25); do
-  if grep -q "Forwarding from" /tmp/mlflow-phase5a1-pf.log; then
+  if grep -q "Forwarding from" "$PF_LOG"; then
     break
+  fi
+  if ! kill -0 "$PF_PID" 2>/dev/null; then
+    echo "[ERROR] Port-forward process exited early"
+    cat "$PF_LOG" || true
+    exit 1
   fi
   sleep 1
 done
 
-if ! grep -q "Forwarding from" /tmp/mlflow-phase5a1-pf.log; then
+if ! grep -q "Forwarding from" "$PF_LOG"; then
   echo "[ERROR] Port-forward did not become ready"
-  cat /tmp/mlflow-phase5a1-pf.log || true
+  cat "$PF_LOG" || true
   exit 1
 fi
 
