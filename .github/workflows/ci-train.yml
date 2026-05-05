@@ -35,13 +35,16 @@ jobs:
           source .venv/bin/activate
           pip install --upgrade pip wheel
           pip install --index-url https://download.pytorch.org/whl/cpu torch
-          pip install transformers==4.45.2 datasets==2.21.0 mlflow==2.16.2 peft==0.12.0 accelerate==0.34.2 scikit-learn pandas sentencepiece
+          pip install transformers==4.45.2 datasets==2.21.0 mlflow==2.16.2 peft==0.12.0 accelerate==0.34.2 scikit-learn pandas sentencepiece huggingface_hub
 
       - name: Hugging Face auth (optional)
-        if: ${{ secrets.HF_TOKEN != '' }}
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
+          if [ -z "${HF_TOKEN:-}" ]; then
+            echo "HF_TOKEN not set; skipping Hugging Face login"
+            exit 0
+          fi
           source .venv/bin/activate
           python - <<'PY'
           from huggingface_hub import login
