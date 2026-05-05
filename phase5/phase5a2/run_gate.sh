@@ -34,11 +34,31 @@ cleanup() {
 }
 trap cleanup EXIT
 
-echo "[1/3] Starting MLflow port-forward on 5001"
+echo "[1/3] Starting MLflow port-forward"
 mkdir -p "$GATE_DIR"
+
+choose_local_port() {
+  for p in 5001 5002 5003 5004 5005 5006 5007 5008 5009 5010; do
+    if ! ss -ltn "( sport = :$p )" | grep -q ":$p"; then
+      echo "$p"
+      return 0
+    fi
+  done
+  return 1
+}
+
+LOCAL_PORT="${MLFLOW_LOCAL_PORT:-}"
+if [[ -z "$LOCAL_PORT" ]]; then
+  LOCAL_PORT="$(choose_local_port)" || {
+    echo "[ERROR] No free local port available in range 5001-5010 for MLflow port-forward"
+    exit 1
+  }
+fi
+
+echo "[INFO] Using local MLflow port: $LOCAL_PORT"
 PF_LOG="$GATE_DIR/gate-portforward.log"
 : > "$PF_LOG"
-kubectl -n mlflow port-forward svc/mlflow-server 5001:5000 >"$PF_LOG" 2>&1 &
+kubectl -n mlflow port-forward svc/mlflow-server "$LOCAL_PORT":5000 >"$PF_LOG" 2>&1 &
 PF_PID=$!
 
 for _ in $(seq 1 25); do
@@ -61,7 +81,7 @@ fi
 
 echo "[2/3] Evaluating promotion gate"
 python "$GATE_DIR/gate_decision.py" \
-  --tracking-uri "http://127.0.0.1:5001" \
+  --tracking-uri "http://127.0.0.1:${LOCAL_PORT}" \
   --policy "$GATE_DIR/gate_policy.yaml" \
   --output "$GATE_DIR/gate_decision.json" \
   "$@"

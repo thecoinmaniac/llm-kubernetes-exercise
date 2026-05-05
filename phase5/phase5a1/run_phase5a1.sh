@@ -34,11 +34,31 @@ cleanup() {
 }
 trap cleanup EXIT
 
-echo "[1/4] Starting MLflow port-forward on 5001"
+echo "[1/4] Starting MLflow port-forward"
 mkdir -p "$LAB_DIR/artifacts"
+
+choose_local_port() {
+  for p in 5001 5002 5003 5004 5005 5006 5007 5008 5009 5010; do
+    if ! ss -ltn "( sport = :$p )" | grep -q ":$p"; then
+      echo "$p"
+      return 0
+    fi
+  done
+  return 1
+}
+
+LOCAL_PORT="${MLFLOW_LOCAL_PORT:-}"
+if [[ -z "$LOCAL_PORT" ]]; then
+  LOCAL_PORT="$(choose_local_port)" || {
+    echo "[ERROR] No free local port available in range 5001-5010 for MLflow port-forward"
+    exit 1
+  }
+fi
+
+echo "[INFO] Using local MLflow port: $LOCAL_PORT"
 PF_LOG="$LAB_DIR/artifacts/mlflow-phase5a1-pf.log"
 : > "$PF_LOG"
-kubectl -n mlflow port-forward svc/mlflow-server 5001:5000 >"$PF_LOG" 2>&1 &
+kubectl -n mlflow port-forward svc/mlflow-server "$LOCAL_PORT":5000 >"$PF_LOG" 2>&1 &
 PF_PID=$!
 
 for _ in $(seq 1 25); do
@@ -60,10 +80,10 @@ if ! grep -q "Forwarding from" "$PF_LOG"; then
 fi
 
 echo "[2/4] Running baseline + LoRA fine-tune + eval logging"
-python "$LAB_DIR/run_phase5a1.py" --project-root "$ROOT_DIR" --tracking-uri "http://127.0.0.1:5001" "$@"
+python "$LAB_DIR/run_phase5a1.py" --project-root "$ROOT_DIR" --tracking-uri "http://127.0.0.1:${LOCAL_PORT}" "$@"
 
 echo "[3/4] Quick health check on MLflow endpoint"
-curl -s -o /dev/null -w 'MLflow HTTP %{http_code}\n' http://127.0.0.1:5001/
+curl -s -o /dev/null -w 'MLflow HTTP %{http_code}\n' "http://127.0.0.1:${LOCAL_PORT}/"
 
 echo "[4/4] Completed Phase 5A.1 run"
 echo "Artifacts in: $LAB_DIR/artifacts"
