@@ -3,6 +3,7 @@ import argparse
 import json
 import os
 import sys
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -51,9 +52,25 @@ def metrics_from_run(run: dict) -> dict:
     return out
 
 
+def get_experiment_id_by_name(tracking_uri: str, experiment_name: str) -> str | None:
+    url = tracking_uri.rstrip("/") + "/api/2.0/mlflow/experiments/get-by-name"
+    params = urllib.parse.urlencode({"experiment_name": experiment_name})
+    req = urllib.request.Request(f"{url}?{params}", method="GET")
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            exp = data.get("experiment") or {}
+            return exp.get("experiment_id")
+    except Exception:
+        return None
+
+
 def find_runs(tracking_uri: str, experiment_name: str, run_name: str, max_results: int = 20) -> list[dict]:
+    experiment_id = get_experiment_id_by_name(tracking_uri, experiment_name)
+    if not experiment_id:
+        return []
     payload = {
-        "experiment_names": [experiment_name],
+        "experiment_ids": [experiment_id],
         "filter": f"attributes.status = 'FINISHED' AND tags.mlflow.runName = '{run_name}'",
         "max_results": max_results,
         "order_by": ["attributes.start_time DESC"],
@@ -63,10 +80,10 @@ def find_runs(tracking_uri: str, experiment_name: str, run_name: str, max_result
 
 
 def resolve_experiment_candidates(experiment_name: str) -> list[str]:
-    candidates = [experiment_name]
-    if not experiment_name.endswith("-proxy"):
-        candidates.append(f"{experiment_name}-proxy")
-    return candidates
+    if experiment_name.endswith("-proxy"):
+        return [experiment_name]
+    # Prefer proxy experiment first because phase5a1 auto-migrates there for artifact safety.
+    return [f"{experiment_name}-proxy", experiment_name]
 
 def evaluate_gate(policy: dict, baseline_metrics: dict, finetuned_metrics: dict) -> dict:
     th = policy["thresholds"]
