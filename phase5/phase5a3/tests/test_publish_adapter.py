@@ -69,6 +69,19 @@ def test_validate_adapter_dir_requires_core_files(tmp_path):
         raise AssertionError("Expected FileNotFoundError")
 
 
+def test_proxy_artifact_url_uses_mlflow_artifacts_endpoint():
+    mod = load_module()
+    url = mod.proxy_artifact_url(
+        "http://127.0.0.1:5002/",
+        "mlflow-artifacts:/experiment/run123/artifacts",
+        "lora_adapter/adapter_config.json",
+    )
+    assert url == (
+        "http://127.0.0.1:5002/api/2.0/mlflow-artifacts/artifacts/"
+        "experiment/run123/artifacts/lora_adapter/adapter_config.json"
+    )
+
+
 def test_build_manifest_contains_gate_context(tmp_path):
     mod = load_module()
     adapter_dir = tmp_path / "adapter"

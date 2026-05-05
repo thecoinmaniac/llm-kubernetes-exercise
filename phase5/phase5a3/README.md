@@ -89,13 +89,19 @@ Do not automatically publish on every push until runner isolation and release ap
 1. Gate rejects
 - `run_publish.sh` stops before calling the publish script.
 
-2. Missing adapter files
-- `publish_adapter.py` exits non-zero before upload.
+2. Fresh CI checkout has no local adapter directory
+- `phase5/phase5a1/artifacts/` is gitignored and is not present after `actions/checkout`.
+- `run_publish.sh` now keeps the MLflow port-forward open after the gate and passes the tracking URI to `publish_adapter.py`.
+- `publish_adapter.py` restores the adapter from the promoted finetuned MLflow run artifact path `lora_adapter` before publishing.
 
-3. Missing `HF_TOKEN`
+3. Missing adapter files after MLflow restore
+- `publish_adapter.py` exits non-zero before upload.
+- Check that the Phase 5A.1 finetuned run logged `safe_log_artifacts(adapter_dir, artifact_path="lora_adapter")` successfully.
+
+4. Missing `HF_TOKEN`
 - real publish exits non-zero; use `--dry-run` for validation-only runs.
 
-4. Wrong HF permissions
+5. Wrong HF permissions
 - Hugging Face upload fails; verify the token has write access to the model repo.
 
 ## Learning checkpoint
